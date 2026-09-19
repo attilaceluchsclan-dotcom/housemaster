@@ -126,35 +126,53 @@ async function handleCapture(e) {
       body: JSON.stringify({
         image: b64,
         mediaType: file.type || 'image/jpeg',
-        boxes: boxCache.map(b => b.name)
+        boxes: boxCache.map(b => ({ name: b.name, keywords: b.keywords }))
       })
     });
     if (!res.ok) throw new Error('sort failed');
     const suggestion = await res.json();
     currentSuggestion = suggestion;
-    document.getElementById('suggestedBox').textContent = suggestion.box || 'Miscellaneous';
-    document.getElementById('reasoning').textContent = suggestion.reason || '';
+    renderSuggestedBox(suggestion.box);
+    document.getElementById('reasoning').textContent = [suggestion.item, suggestion.reason].filter(Boolean).join(' — ');
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
   } catch (err) {
-    currentSuggestion = { box: 'Miscellaneous', reason: '' };
-    document.getElementById('suggestedBox').textContent = 'Miscellaneous';
+    const fb = fallbackBoxName();
+    currentSuggestion = { box: fb, reason: '' };
+    renderSuggestedBox(fb);
     document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
   }
 }
 
+function fallbackBoxName() {
+  const b = boxCache.find(b => /misc/i.test(b.name || ''));
+  return b ? b.name : (boxCache[boxCache.length - 1]?.name || 'Miscellaneous');
+}
+
+function boxDot(box) {
+  if (!box) return '';
+  const color = box.color_hex || '#999';
+  return `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${color};border:1px solid rgba(0,0,0,.25);vertical-align:middle;margin-right:6px;"></span>`;
+}
+
+function renderSuggestedBox(boxName) {
+  const box = boxCache.find(b => b.name === boxName);
+  const el = document.getElementById('suggestedBox');
+  el.innerHTML = `${boxDot(box)}${box ? (box.emoji ? box.emoji + ' ' : '') : ''}${boxName || 'Miscellaneous'}`;
+}
+
 async function finalize(status) {
   if (!currentFile) return;
-  const boxName = status === 'misc' ? 'Miscellaneous' : (currentSuggestion?.box || 'Miscellaneous');
-  const box = boxCache.find(b => b.name === boxName) || boxCache.find(b => b.name === 'Miscellaneous');
+  const boxName = status === 'misc' ? fallbackBoxName() : (currentSuggestion?.box || fallbackBoxName());
+  const box = boxCache.find(b => b.name === boxName) || boxCache.find(b => b.name === fallbackBoxName());
 
   const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
   await sb.storage.from('item-photos').upload(path, currentFile, { contentType: currentFile.type || 'image/jpeg' });
 
   const { data: itemRows } = await sb.from('items').insert({
-    name: currentSuggestion?.box || null,
+    name: currentSuggestion?.item || currentSuggestion?.box || null,
     description: currentSuggestion?.reason || null,
     box_id: box ? box.id : null,
     status: status
@@ -179,15 +197,16 @@ async function loadLog() {
   const logList = document.getElementById('logList');
   const { data } = await sb
     .from('items')
-    .select('id, description, status, created_at, box:box_id(name), item_photos(image_path)')
+    .select('id, name, description, status, created_at, box:box_id(name, color_hex, emoji), item_photos(image_path)')
     .order('created_at', { ascending: false })
     .limit(15);
   if (!data || !data.length) { logList.innerHTML = '<div class="empty">No items sorted yet.</div>'; return; }
   logList.innerHTML = data.map(it => {
     const img = it.item_photos && it.item_photos[0] ? `<img src="${photoUrl(it.item_photos[0].image_path)}" alt="">` : '';
     const boxName = it.box ? it.box.name : 'Unsorted';
+    const itemLabel = it.name || boxName;
     const time = new Date(it.created_at).toLocaleString();
-    return `<div class="log-item">${img}<div class="meta"><div>${boxName}</div><div class="time">${time}</div></div><span class="status-pill ${it.status}">${it.status}</span></div>`;
+    return `<div class="log-item">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><span class="status-pill ${it.status}">${it.status}</span></div>`;
   }).join('');
 }
 

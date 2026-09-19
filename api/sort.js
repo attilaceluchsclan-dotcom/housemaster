@@ -4,9 +4,18 @@ export default async function handler(req, res) {
   const { image, mediaType, boxes } = req.body || {};
   if (!image) return res.status(400).json({ error: 'missing image' });
 
-  const boxList = (boxes && boxes.length) ? boxes : [
-    'Kitchen', 'Bathroom', 'Bedroom', 'Office / Desk', 'Tools', 'Donate', 'Trash', 'Miscellaneous'
+  // boxes: array of { name, keywords } from the client (Supabase boxes table).
+  // Falls back to a generic set only if the client sent nothing.
+  const boxRows = (boxes && boxes.length) ? boxes : [
+    { name: 'Miscellaneous', keywords: 'anything that does not fit another category' }
   ];
+  const boxNames = boxRows.map(b => (typeof b === 'string' ? b : b.name));
+  const fallbackBox = boxNames.find(n => /misc/i.test(n)) || boxNames[boxNames.length - 1];
+
+  const boxListText = boxRows.map(b => {
+    if (typeof b === 'string') return `- ${b}`;
+    return `- ${b.name}${b.keywords ? ` (examples: ${b.keywords})` : ''}`;
+  }).join('\n');
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -24,7 +33,7 @@ export default async function handler(req, res) {
           content: [
             {
               type: 'text',
-              text: `You are sorting a household item into one of these boxes: ${boxList.join(', ')}. Look at the photo and respond ONLY with raw JSON, no markdown fences: {"box": "<one of the box names exactly>", "reason": "<one short sentence>"}`
+              text: `You are sorting a household item into exactly one of these storage boxes. Each box lists example items it holds — use those to judge fit, don't go by the box name alone.\n\n${boxListText}\n\nLook at the photo and identify the item, then pick the single best-matching box. If nothing fits well, use "${fallbackBox}". Respond ONLY with raw JSON, no markdown fences: {"item": "<short specific item name>", "box": "<one of the box names exactly as listed>", "reason": "<one short sentence citing what the item is and why that box>"}`
             },
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } }
           ]
@@ -36,9 +45,9 @@ export default async function handler(req, res) {
     const text = (data.content || []).map(b => b.text || '').join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
-    if (!boxList.includes(parsed.box)) parsed.box = 'Miscellaneous';
+    if (!boxNames.includes(parsed.box)) parsed.box = fallbackBox;
     return res.status(200).json(parsed);
   } catch (err) {
-    return res.status(200).json({ box: 'Miscellaneous', reason: 'Sorting failed server-side.' });
+    return res.status(200).json({ item: '', box: fallbackBox, reason: 'Sorting failed server-side.' });
   }
 }
