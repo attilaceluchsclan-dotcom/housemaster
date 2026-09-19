@@ -4,8 +4,8 @@ export default async function handler(req, res) {
   const { image, mediaType, boxes } = req.body || {};
   if (!image) return res.status(400).json({ error: 'missing image' });
 
-  // boxes: array of { name, keywords } from the client (Supabase boxes table).
-  // Falls back to a generic set only if the client sent nothing.
+  // boxes: array of { name, keywords } from the client — only the AI-eligible
+  // boxes (manual_only ones are excluded client-side before this call).
   const boxRows = (boxes && boxes.length) ? boxes : [
     { name: 'Miscellaneous', keywords: 'anything that does not fit another category' }
   ];
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
           content: [
             {
               type: 'text',
-              text: `You are sorting a household item into exactly one of these storage boxes. Each box lists example items it holds — use those to judge fit, don't go by the box name alone.\n\n${boxListText}\n\nLook at the photo and identify the item, then pick the single best-matching box. If nothing fits well, use "${fallbackBox}". Respond ONLY with raw JSON, no markdown fences: {"item": "<short specific item name>", "box": "<one of the box names exactly as listed>", "reason": "<one short sentence citing what the item is and why that box>"}`
+              text: `You are sorting a household item into exactly one of these storage boxes. Each box lists example items it holds — use those to judge fit, don't go by the box name alone.\n\n${boxListText}\n\nImportant: sort by what the item IS (electrical vs. not), never by whether it gets physically installed into a wall or fixture. Wall outlets/sockets, switches, switch plates, junction boxes, light fixtures, and any other electrical or powered part still belong in the electrical/electronics box even though they mount into a wall like a plumbing or hardware part would -- "it gets installed into a wall" is not a reason to file something as plumbing/DIY.\n\nLook at the photo and identify the item, then pick the single best-matching box. If nothing fits well, use "${fallbackBox}". Respond ONLY with raw JSON, no markdown fences: {"item": "<short specific item name>", "box": "<one of the box names exactly as listed>", "reason": "<one short sentence citing what the item is and why that box>"}`
             },
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } }
           ]
