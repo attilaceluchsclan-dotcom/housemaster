@@ -19,9 +19,16 @@
   h1 { font-size:1.3rem; margin:0 0 4px; }
   .streak { color:var(--sub); font-size:.9rem; margin-bottom:20px; }
   .capture-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; text-align:center; margin-bottom:20px; }
-  .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:#fff; font-size:2rem; cursor:pointer; user-select:none; }
+  .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:#fff; font-size:2rem; cursor:pointer; user-select:none; border:none; }
   .snap-btn:active { transform:scale(.96); }
   #fileInput { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
+  .camera-overlay { position:fixed; inset:0; background:#000; display:none; z-index:1000; flex-direction:column; align-items:center; justify-content:center; }
+  .camera-overlay.show { display:flex; }
+  .camera-overlay video { width:100%; height:100%; object-fit:cover; }
+  .camera-controls { position:absolute; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:40px; padding:24px 20px calc(24px + env(safe-area-inset-bottom, 0px)); background:linear-gradient(transparent, rgba(0,0,0,.6)); }
+  .cam-shutter { width:72px; height:72px; border-radius:50%; background:#fff; border:4px solid rgba(255,255,255,.5); cursor:pointer; }
+  .cam-shutter:active { transform:scale(.94); }
+  .cam-cancel, .cam-switch { width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,.15); color:#fff; border:none; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .hint { color:var(--sub); font-size:.85rem; margin-top:10px; }
   .result-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:20px; display:none; }
   .result-card.show { display:block; }
@@ -69,9 +76,18 @@
   <div class="streak" id="streakLine">Loading…</div>
 
   <div class="capture-card">
-    <label class="snap-btn" for="fileInput">📷</label>
+    <button class="snap-btn" id="snapBtn" type="button">📷</button>
     <div class="hint">Tap to photograph an item</div>
     <input type="file" id="fileInput" accept="image/*" capture="environment">
+  </div>
+
+  <div class="camera-overlay" id="cameraOverlay">
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    <div class="camera-controls">
+      <button class="cam-cancel" id="camCancelBtn" type="button" aria-label="Cancel">✕</button>
+      <button class="cam-shutter" id="camShutterBtn" type="button" aria-label="Take photo"></button>
+      <button class="cam-switch" id="camSwitchBtn" type="button" aria-label="Switch camera">⟲</button>
+    </div>
   </div>
 
   <div class="result-card" id="resultCard">
@@ -157,9 +173,86 @@ function fallbackBoxId() {
   return b ? b.id : (boxCache[boxCache.length - 1]?.id ?? null);
 }
 
+let cameraStream = null;
+let cameraFacing = 'environment';
+
+async function openCamera() {
+  // Bypasses the OS camera-picker intent entirely (some devices/OS versions
+  // ignore the file input's capture="environment" hint and default to the
+  // front lens) by requesting the rear camera directly via getUserMedia.
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('fileInput').click();
+    return;
+  }
+  cameraFacing = 'environment';
+  const ok = await startStream(cameraFacing);
+  if (!ok) {
+    // getUserMedia unsupported/blocked — fall back to the native file picker
+    document.getElementById('fileInput').click();
+  }
+}
+
+async function startStream(facing) {
+  stopStream();
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: facing } },
+      audio: false
+    });
+  } catch (err) {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing },
+        audio: false
+      });
+    } catch (err2) {
+      return false;
+    }
+  }
+  const video = document.getElementById('cameraVideo');
+  video.srcObject = cameraStream;
+  document.getElementById('cameraOverlay').classList.add('show');
+  return true;
+}
+
+function stopStream() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+function closeCamera() {
+  stopStream();
+  document.getElementById('cameraOverlay').classList.remove('show');
+}
+
+async function switchCamera() {
+  cameraFacing = cameraFacing === 'environment' ? 'user' : 'environment';
+  await startStream(cameraFacing);
+}
+
+function captureFromCamera() {
+  const video = document.getElementById('cameraVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    closeCamera();
+    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    processCapturedFile(file);
+  }, 'image/jpeg', 0.9);
+}
+
 async function handleCapture(e) {
   const file = e.target.files[0];
   if (!file) return;
+  await processCapturedFile(file);
+}
+
+async function processCapturedFile(file) {
   currentFile = file;
 
   const resultCard = document.getElementById('resultCard');
@@ -382,6 +475,10 @@ async function exportCsv() {
 }
 
 document.getElementById('fileInput').addEventListener('change', handleCapture);
+document.getElementById('snapBtn').addEventListener('click', openCamera);
+document.getElementById('camCancelBtn').addEventListener('click', closeCamera);
+document.getElementById('camShutterBtn').addEventListener('click', captureFromCamera);
+document.getElementById('camSwitchBtn').addEventListener('click', switchCamera);
 document.getElementById('confirmBtn').addEventListener('click', () => finalize('confirmed'));
 document.getElementById('miscBtn').addEventListener('click', () => finalize('misc'));
 document.getElementById('laterBtn').addEventListener('click', () => finalize('later'));
