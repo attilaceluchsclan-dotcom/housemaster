@@ -105,7 +105,7 @@
     <h2>Recent
       <span class="actions">
         <button class="link-btn" id="toggleAllBtn">Show all</button>
-        <button class="link-btn" id="exportBtn">Export CSV</button>
+        <button class="link-btn" id="exportBtn">Export (color)</button>
       </span>
     </h2>
     <input type="text" class="search-box" id="searchInput" placeholder="Search items by name…">
@@ -126,7 +126,7 @@ async function loadBoxes() {
   const { data } = await sb.from('boxes').select('*').order('id');
   boxCache = data || [];
   const picker = document.getElementById('boxPicker');
-  picker.innerHTML = boxCache.map(b => `<option value="${b.name}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  picker.innerHTML = boxCache.map(b => `<option value="${b.id}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
 }
 
 function fileToBase64(file) {
@@ -145,8 +145,14 @@ function fallbackBoxName() {
 
 function boxDot(box) {
   if (!box) return '';
-  const color = box.color_hex || '#999';
-  return `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${color};border:1px solid rgba(0,0,0,.25);vertical-align:middle;margin-right:6px;"></span>`;
+  const c1 = box.color_hex || '#999';
+  const bg = box.color_hex2 ? `linear-gradient(135deg, ${c1} 0 50%, ${box.color_hex2} 50% 100%)` : c1;
+  return `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${bg};border:1px solid rgba(0,0,0,.25);vertical-align:middle;margin-right:6px;"></span>`;
+}
+
+function fallbackBoxId() {
+  const b = boxCache.find(b => /misc/i.test(b.name || '') && !b.manual_only) || boxCache.find(b => /misc/i.test(b.name || ''));
+  return b ? b.id : (boxCache[boxCache.length - 1]?.id ?? null);
 }
 
 async function handleCapture(e) {
@@ -185,16 +191,16 @@ async function handleCapture(e) {
     const suggestion = await res.json();
     currentSuggestion = suggestion;
     document.getElementById('itemNameInput').value = suggestion.item || '';
-    document.getElementById('boxPicker').value = suggestion.box || fallbackBoxName();
+    const matched = eligibleBoxes.find(b => b.name === suggestion.box);
+    document.getElementById('boxPicker').value = matched ? matched.id : fallbackBoxId();
     document.getElementById('reasoning').textContent = suggestion.reason || '';
     await checkDuplicate(suggestion.item);
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
   } catch (err) {
-    const fb = fallbackBoxName();
-    currentSuggestion = { box: fb, reason: '' };
+    currentSuggestion = { box: fallbackBoxName(), reason: '' };
     document.getElementById('itemNameInput').value = '';
-    document.getElementById('boxPicker').value = fb;
+    document.getElementById('boxPicker').value = fallbackBoxId();
     document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
@@ -228,10 +234,10 @@ function cancelCapture() {
 
 async function finalize(status) {
   if (!currentFile) return;
-  const boxName = document.getElementById('boxPicker').value || fallbackBoxName();
-  const itemName = document.getElementById('itemNameInput').value.trim() || currentSuggestion?.item || boxName;
+  const boxId = status === 'misc' ? fallbackBoxId() : (parseInt(document.getElementById('boxPicker').value, 10) || fallbackBoxId());
+  const box = boxCache.find(b => b.id === boxId) || boxCache.find(b => b.id === fallbackBoxId());
+  const itemName = document.getElementById('itemNameInput').value.trim() || currentSuggestion?.item || (box ? box.name : 'Item');
   const qty = parseInt(document.getElementById('qtyInput').value, 10) || 1;
-  const box = boxCache.find(b => b.name === boxName) || boxCache.find(b => b.name === fallbackBoxName());
 
   const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
   await sb.storage.from('item-photos').upload(path, currentFile, { contentType: currentFile.type || 'image/jpeg' });
@@ -329,22 +335,41 @@ async function loadStreak() {
   document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
 }
 
+function escapeHtml(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function textColorFor(hex) {
+  if (!hex) return '#000000';
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#000000' : '#ffffff';
+}
+
 async function exportCsv() {
   const { data } = await sb
     .from('items')
-    .select('name, description, status, created_at, qty, box:box_id(name)')
+    .select('name, description, status, created_at, qty, box:box_id(name, color_hex)')
     .order('created_at', { ascending: false })
     .limit(2000);
   if (!data || !data.length) return;
-  const header = ['Item', 'Box', 'Qty', 'Status', 'Description', 'Date'];
-  const rows = data.map(it => [
-    it.name || '', it.box ? it.box.name : '', it.qty || 1, it.status || '', it.description || '', new Date(it.created_at).toLocaleString()
-  ]);
-  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const headerCells = ['Item', 'Box', 'Qty', 'Status', 'Description', 'Date']
+    .map(h => `<th style="background:#333;color:#fff;padding:6px 10px;border:1px solid #999;text-align:left;">${h}</th>`).join('');
+  const bodyRows = data.map(it => {
+    const bg = it.box && it.box.color_hex ? it.box.color_hex : '#f2f2f2';
+    const fg = textColorFor(bg);
+    const cells = [
+      it.name || '', it.box ? it.box.name : '', it.qty || 1, it.status || '', it.description || '', new Date(it.created_at).toLocaleString()
+    ].map(v => `<td style="background:${bg};color:${fg};padding:6px 10px;border:1px solid #999;">${escapeHtml(v)}</td>`).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  const html = `<html><head><meta charset="UTF-8"></head><body><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">
+    <thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `housemaster_export_${Date.now()}.csv`;
+  a.href = url; a.download = `housemaster_export_${Date.now()}.xls`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
