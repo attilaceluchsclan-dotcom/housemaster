@@ -96,7 +96,7 @@
       <div class="reasoning" id="reasoning"></div>
       <div class="btn-row">
         <button class="action-btn confirm" id="confirmBtn">✓ Confirm</button>
-        <button class="action-btn misc" id="miscBtn">Miscellaneous</button>
+        <button class="action-btn misc" id="miscBtn">General</button>
         <button class="action-btn later" id="laterBtn">Check later</button>
         <button class="action-btn cancel" id="cancelBtn">Cancel</button>
       </div>
@@ -141,8 +141,8 @@ function fileToBase64(file) {
 }
 
 function fallbackBoxName() {
-  const b = boxCache.find(b => /misc/i.test(b.name || ''));
-  return b ? b.name : (boxCache[boxCache.length - 1]?.name || 'Miscellaneous');
+  const b = boxCache.find(b => b.is_fallback) || boxCache.find(b => /misc/i.test(b.name || ''));
+  return b ? b.name : (boxCache[boxCache.length - 1]?.name || 'General');
 }
 
 function boxDot(box) {
@@ -153,7 +153,7 @@ function boxDot(box) {
 }
 
 function fallbackBoxId() {
-  const b = boxCache.find(b => /misc/i.test(b.name || '') && !b.manual_only) || boxCache.find(b => /misc/i.test(b.name || ''));
+  const b = boxCache.find(b => b.is_fallback) || boxCache.find(b => /misc/i.test(b.name || '') && !b.manual_only) || boxCache.find(b => /misc/i.test(b.name || ''));
   return b ? b.id : (boxCache[boxCache.length - 1]?.id ?? null);
 }
 
@@ -186,7 +186,7 @@ async function handleCapture(e) {
       body: JSON.stringify({
         image: b64,
         mediaType: file.type || 'image/jpeg',
-        boxes: eligibleBoxes.map(b => ({ name: b.name, keywords: b.keywords }))
+        boxes: eligibleBoxes.map(b => ({ name: b.name, keywords: b.keywords, is_fallback: !!b.is_fallback }))
       })
     });
     if (!res.ok) throw new Error('sort failed');

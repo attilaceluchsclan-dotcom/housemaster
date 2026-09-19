@@ -10,7 +10,8 @@ export default async function handler(req, res) {
     { name: 'Miscellaneous', keywords: 'anything that does not fit another category' }
   ];
   const boxNames = boxRows.map(b => (typeof b === 'string' ? b : b.name));
-  const fallbackBox = boxNames.find(n => /misc/i.test(n)) || boxNames[boxNames.length - 1];
+  const fallbackRow = boxRows.find(b => typeof b === 'object' && b.is_fallback);
+  const fallbackBox = fallbackRow ? fallbackRow.name : (boxNames.find(n => /misc/i.test(n)) || boxNames[boxNames.length - 1]);
 
   const boxListText = boxRows.map(b => {
     if (typeof b === 'string') return `- ${b}`;
