@@ -356,17 +356,22 @@ async function exportCsv() {
     .order('created_at', { ascending: false })
     .limit(2000);
   if (!data || !data.length) return;
+  // column widths (px) — wide enough that box/item names never get clipped in Excel/WPS
+  const colWidths = [220, 170, 50, 90, 320, 150];
+  const colgroup = colWidths.map(w => `<col style="width:${w}px;mso-width-px:${w};mso-width-source:userset;">`).join('');
   const headerCells = ['Item', 'Box', 'Qty', 'Status', 'Description', 'Date']
-    .map(h => `<th style="background:#333;color:#fff;padding:6px 10px;border:1px solid #999;text-align:left;">${h}</th>`).join('');
+    .map((h, i) => `<th style="background:#333;color:#fff;padding:6px 10px;border:1px solid #999;text-align:left;white-space:normal;width:${colWidths[i]}px;">${h}</th>`).join('');
   const bodyRows = data.map(it => {
     const bg = it.box && it.box.color_hex ? it.box.color_hex : '#f2f2f2';
     const fg = textColorFor(bg);
-    const cells = [
+    const values = [
       it.name || '', it.box ? it.box.name : '', it.qty || 1, it.status || '', it.description || '', new Date(it.created_at).toLocaleString()
-    ].map(v => `<td style="background:${bg};color:${fg};padding:6px 10px;border:1px solid #999;">${escapeHtml(v)}</td>`).join('');
+    ];
+    const cells = values.map((v, i) => `<td style="background:${bg};color:${fg};padding:6px 10px;border:1px solid #999;white-space:normal;vertical-align:top;width:${colWidths[i]}px;">${escapeHtml(v)}</td>`).join('');
     return `<tr>${cells}</tr>`;
   }).join('');
-  const html = `<html><head><meta charset="UTF-8"></head><body><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">
+  const html = `<html><head><meta charset="UTF-8"></head><body><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;table-layout:fixed;">
+    <colgroup>${colgroup}</colgroup>
     <thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
   const url = URL.createObjectURL(blob);
