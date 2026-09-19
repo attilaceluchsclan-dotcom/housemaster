@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Housemaster — Snap & Sort</title>
+<style>
+  :root {
+    --bg:#f5f4f1; --card:#fff; --ink:#1c1b19; --sub:#6b6862;
+    --accent:#b5651d; --line:#e5e2dc; --good:#3a7d44; --later:#6b6862;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161513; --card:#221f1c; --ink:#f0ede7; --sub:#a39d92; --line:#34302b; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,Segoe UI,Roboto,sans-serif; min-height:100vh; padding:20px 16px 60px; }
+  .wrap { max-width:480px; margin:0 auto; }
+  h1 { font-size:1.3rem; margin:0 0 4px; }
+  .streak { color:var(--sub); font-size:.9rem; margin-bottom:20px; }
+  .capture-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; text-align:center; margin-bottom:20px; }
+  .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:#fff; font-size:2rem; cursor:pointer; user-select:none; }
+  .snap-btn:active { transform:scale(.96); }
+  #fileInput { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
+  .hint { color:var(--sub); font-size:.85rem; margin-top:10px; }
+  .result-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:20px; display:none; }
+  .result-card.show { display:block; }
+  .result-photo { width:100%; max-height:220px; object-fit:cover; border-radius:12px; margin-bottom:12px; }
+  .suggestion { font-size:1.05rem; margin-bottom:4px; }
+  .suggestion b { color:var(--accent); }
+  .reasoning { color:var(--sub); font-size:.85rem; margin-bottom:16px; }
+  .btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .action-btn { flex:1 1 auto; min-width:100px; padding:12px 10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.9rem; cursor:pointer; }
+  .action-btn.confirm { background:var(--good); color:#fff; border-color:var(--good); }
+  .action-btn.misc { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .action-btn.later { background:var(--later); color:#fff; border-color:var(--later); }
+  .loading { color:var(--sub); font-size:.9rem; padding:10px 0; }
+  .log h2 { font-size:1rem; color:var(--sub); font-weight:600; margin-bottom:10px; }
+  .log-item { display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+  .log-item img { width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+  .log-item .meta { flex:1; min-width:0; }
+  .log-item .time { color:var(--sub); font-size:.75rem; }
+  .status-pill { font-size:.7rem; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+  .status-pill.confirmed { background:rgba(58,125,68,.15); color:var(--good); }
+  .status-pill.misc { background:rgba(181,101,29,.15); color:var(--accent); }
+  .status-pill.later { background:rgba(107,104,98,.15); color:var(--later); }
+  .empty { color:var(--sub); font-size:.85rem; text-align:center; padding:20px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Housemaster — Snap & Sort</h1>
+  <div class="streak" id="streakLine">Loading…</div>
+
+  <div class="capture-card">
+    <label class="snap-btn" for="fileInput">📷</label>
+    <div class="hint">Tap to photograph an item</div>
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <img class="result-photo" id="resultPhoto" alt="captured item">
+    <div id="loadingLine" class="loading" style="display:none;">Sorting…</div>
+    <div id="resultBody" style="display:none;">
+      <div class="suggestion">Suggested box: <b id="suggestedBox">—</b></div>
+      <div class="reasoning" id="reasoning"></div>
+      <div class="btn-row">
+        <button class="action-btn confirm" id="confirmBtn">✓ Confirm</button>
+        <button class="action-btn misc" id="miscBtn">Miscellaneous</button>
+        <button class="action-btn later" id="laterBtn">Check later</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="log">
+    <h2>Recent</h2>
+    <div id="logList"><div class="empty">No items sorted yet.</div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/supabase.min.js"></script>
+<script>
+// Filled in at deploy time via /api/config (keeps keys out of the static bundle if you prefer,
+// but the anon key is safe to expose client-side — that's what it's for).
+const SUPABASE_URL = "https://clteinrzpebrkrkthsvx.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdGVpbnJ6cGVicmtya3Roc3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODU0MTUsImV4cCI6MjEwNTM2MTQxNX0.EO4rB4sMIEwLlUlec2Ep4MB9a47vF0r_zflUOzdJX9Y";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentFile = null, currentPhotoUrl = null, currentSuggestion = null, boxCache = [];
+
+async function loadBoxes() {
+  const { data } = await sb.from('boxes').select('*').order('id');
+  boxCache = data || [];
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleCapture(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  currentFile = file;
+
+  const resultCard = document.getElementById('resultCard');
+  const resultPhoto = document.getElementById('resultPhoto');
+  const loadingLine = document.getElementById('loadingLine');
+  const resultBody = document.getElementById('resultBody');
+
+  currentPhotoUrl = URL.createObjectURL(file);
+  resultPhoto.src = currentPhotoUrl;
+  resultCard.classList.add('show');
+  loadingLine.style.display = 'block';
+  loadingLine.textContent = 'Sorting…';
+  resultBody.style.display = 'none';
+
+  try {
+    const b64 = await fileToBase64(file);
+    const res = await fetch('/api/sort', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: b64,
+        mediaType: file.type || 'image/jpeg',
+        boxes: boxCache.map(b => b.name)
+      })
+    });
+    if (!res.ok) throw new Error('sort failed');
+    const suggestion = await res.json();
+    currentSuggestion = suggestion;
+    document.getElementById('suggestedBox').textContent = suggestion.box || 'Miscellaneous';
+    document.getElementById('reasoning').textContent = suggestion.reason || '';
+    loadingLine.style.display = 'none';
+    resultBody.style.display = 'block';
+  } catch (err) {
+    currentSuggestion = { box: 'Miscellaneous', reason: '' };
+    document.getElementById('suggestedBox').textContent = 'Miscellaneous';
+    document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
+    loadingLine.style.display = 'none';
+    resultBody.style.display = 'block';
+  }
+}
+
+async function finalize(status) {
+  if (!currentFile) return;
+  const boxName = status === 'misc' ? 'Miscellaneous' : (currentSuggestion?.box || 'Miscellaneous');
+  const box = boxCache.find(b => b.name === boxName) || boxCache.find(b => b.name === 'Miscellaneous');
+
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  await sb.storage.from('item-photos').upload(path, currentFile, { contentType: currentFile.type || 'image/jpeg' });
+
+  const { data: itemRows } = await sb.from('items').insert({
+    name: currentSuggestion?.box || null,
+    description: currentSuggestion?.reason || null,
+    box_id: box ? box.id : null,
+    status: status
+  }).select();
+
+  if (itemRows && itemRows[0]) {
+    await sb.from('item_photos').insert({ item_id: itemRows[0].id, image_path: path });
+  }
+
+  document.getElementById('resultCard').classList.remove('show');
+  currentFile = null; currentSuggestion = null;
+  document.getElementById('fileInput').value = '';
+  loadLog();
+  loadStreak();
+}
+
+function photoUrl(path) {
+  return `${SUPABASE_URL}/storage/v1/object/public/item-photos/${path}`;
+}
+
+async function loadLog() {
+  const logList = document.getElementById('logList');
+  const { data } = await sb
+    .from('items')
+    .select('id, description, status, created_at, box:box_id(name), item_photos(image_path)')
+    .order('created_at', { ascending: false })
+    .limit(15);
+  if (!data || !data.length) { logList.innerHTML = '<div class="empty">No items sorted yet.</div>'; return; }
+  logList.innerHTML = data.map(it => {
+    const img = it.item_photos && it.item_photos[0] ? `<img src="${photoUrl(it.item_photos[0].image_path)}" alt="">` : '';
+    const boxName = it.box ? it.box.name : 'Unsorted';
+    const time = new Date(it.created_at).toLocaleString();
+    return `<div class="log-item">${img}<div class="meta"><div>${boxName}</div><div class="time">${time}</div></div><span class="status-pill ${it.status}">${it.status}</span></div>`;
+  }).join('');
+}
+
+async function loadStreak() {
+  const { data } = await sb.from('items').select('created_at');
+  if (!data) { document.getElementById('streakLine').textContent = ''; return; }
+  const days = new Set(data.map(r => new Date(r.created_at).toDateString()));
+  document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
+}
+
+document.getElementById('fileInput').addEventListener('change', handleCapture);
+document.getElementById('confirmBtn').addEventListener('click', () => finalize('confirmed'));
+document.getElementById('miscBtn').addEventListener('click', () => finalize('misc'));
+document.getElementById('laterBtn').addEventListener('click', () => finalize('later'));
+
+loadBoxes().then(() => { loadLog(); loadStreak(); });
+</script>
+</body>
+</html>
