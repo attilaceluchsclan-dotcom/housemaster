@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg:#f5f4f1; --card:#fff; --ink:#1c1b19; --sub:#6b6862;
-    --accent:#b5651d; --line:#e5e2dc; --good:#3a7d44; --later:#6b6862;
+    --accent:#b5651d; --line:#e5e2dc; --good:#3a7d44; --later:#6b6862; --warn:#b5651d; --danger:#b3261e;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#161513; --card:#221f1c; --ink:#f0ede7; --sub:#a39d92; --line:#34302b; }
@@ -25,25 +25,40 @@
   .result-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:20px; display:none; }
   .result-card.show { display:block; }
   .result-photo { width:100%; max-height:220px; object-fit:cover; border-radius:12px; margin-bottom:12px; }
-  .suggestion { font-size:1.05rem; margin-bottom:4px; }
-  .suggestion b { color:var(--accent); }
-  .reasoning { color:var(--sub); font-size:.85rem; margin-bottom:16px; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:.75rem; color:var(--sub); margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em; }
+  .field input[type="text"], .field select, .field input[type="number"] {
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:.95rem;
+  }
+  .row2 { display:flex; gap:10px; }
+  .row2 .field { flex:1; }
+  .reasoning { color:var(--sub); font-size:.85rem; margin-bottom:14px; }
+  .dup-warning { background:rgba(181,101,29,.12); color:var(--warn); border:1px solid rgba(181,101,29,.3); border-radius:10px; padding:8px 10px; font-size:.82rem; margin-bottom:12px; }
   .btn-row { display:flex; gap:8px; flex-wrap:wrap; }
   .action-btn { flex:1 1 auto; min-width:100px; padding:12px 10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.9rem; cursor:pointer; }
   .action-btn.confirm { background:var(--good); color:#fff; border-color:var(--good); }
   .action-btn.misc { background:var(--accent); color:#fff; border-color:var(--accent); }
   .action-btn.later { background:var(--later); color:#fff; border-color:var(--later); }
+  .action-btn.cancel { background:transparent; color:var(--danger); border-color:var(--danger); flex:0 1 100px; }
   .loading { color:var(--sub); font-size:.9rem; padding:10px 0; }
-  .log h2 { font-size:1rem; color:var(--sub); font-weight:600; margin-bottom:10px; }
+  .log h2 { font-size:1rem; color:var(--sub); font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+  .log h2 .actions { display:flex; gap:8px; }
+  .link-btn { background:none; border:none; color:var(--accent); font-size:.78rem; cursor:pointer; padding:2px 4px; }
+  .search-box { width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:.85rem; margin-bottom:12px; }
   .log-item { display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
   .log-item img { width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0; }
   .log-item .meta { flex:1; min-width:0; }
   .log-item .time { color:var(--sub); font-size:.75rem; }
+  .log-item .row-actions { display:flex; gap:6px; align-items:center; }
+  .icon-btn { background:none; border:none; cursor:pointer; font-size:.9rem; padding:4px; color:var(--sub); }
   .status-pill { font-size:.7rem; padding:2px 8px; border-radius:999px; white-space:nowrap; }
   .status-pill.confirmed { background:rgba(58,125,68,.15); color:var(--good); }
   .status-pill.misc { background:rgba(181,101,29,.15); color:var(--accent); }
   .status-pill.later { background:rgba(107,104,98,.15); color:var(--later); }
   .empty { color:var(--sub); font-size:.85rem; text-align:center; padding:20px 0; }
+  .edit-row { display:flex; gap:6px; flex:1; align-items:center; }
+  .edit-row input, .edit-row select { padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.82rem; }
 </style>
 </head>
 <body>
@@ -61,35 +76,57 @@
     <img class="result-photo" id="resultPhoto" alt="captured item">
     <div id="loadingLine" class="loading" style="display:none;">Sorting…</div>
     <div id="resultBody" style="display:none;">
-      <div class="suggestion">Suggested box: <b id="suggestedBox">—</b></div>
+      <div id="dupWarning" class="dup-warning" style="display:none;"></div>
+      <div class="field">
+        <label for="itemNameInput">Item name</label>
+        <input type="text" id="itemNameInput" placeholder="Item name">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="boxPicker">Box</label>
+          <select id="boxPicker"></select>
+        </div>
+        <div class="field" style="max-width:90px;">
+          <label for="qtyInput">Qty</label>
+          <input type="number" id="qtyInput" min="1" value="1">
+        </div>
+      </div>
       <div class="reasoning" id="reasoning"></div>
       <div class="btn-row">
         <button class="action-btn confirm" id="confirmBtn">✓ Confirm</button>
         <button class="action-btn misc" id="miscBtn">Miscellaneous</button>
         <button class="action-btn later" id="laterBtn">Check later</button>
+        <button class="action-btn cancel" id="cancelBtn">Cancel</button>
       </div>
     </div>
   </div>
 
   <div class="log">
-    <h2>Recent</h2>
+    <h2>Recent
+      <span class="actions">
+        <button class="link-btn" id="toggleAllBtn">Show all</button>
+        <button class="link-btn" id="exportBtn">Export CSV</button>
+      </span>
+    </h2>
+    <input type="text" class="search-box" id="searchInput" placeholder="Search items by name…">
     <div id="logList"><div class="empty">No items sorted yet.</div></div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-// Filled in at deploy time via /api/config (keeps keys out of the static bundle if you prefer,
-// but the anon key is safe to expose client-side — that's what it's for).
 const SUPABASE_URL = "https://clteinrzpebrkrkthsvx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdGVpbnJ6cGVicmtya3Roc3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODU0MTUsImV4cCI6MjEwNTM2MTQxNX0.EO4rB4sMIEwLlUlec2Ep4MB9a47vF0r_zflUOzdJX9Y";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentFile = null, currentPhotoUrl = null, currentSuggestion = null, boxCache = [];
+let showingAll = false;
 
 async function loadBoxes() {
   const { data } = await sb.from('boxes').select('*').order('id');
   boxCache = data || [];
+  const picker = document.getElementById('boxPicker');
+  picker.innerHTML = boxCache.map(b => `<option value="${b.name}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
 }
 
 function fileToBase64(file) {
@@ -99,51 +136,6 @@ function fileToBase64(file) {
     r.onerror = rej;
     r.readAsDataURL(file);
   });
-}
-
-async function handleCapture(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  currentFile = file;
-
-  const resultCard = document.getElementById('resultCard');
-  const resultPhoto = document.getElementById('resultPhoto');
-  const loadingLine = document.getElementById('loadingLine');
-  const resultBody = document.getElementById('resultBody');
-
-  currentPhotoUrl = URL.createObjectURL(file);
-  resultPhoto.src = currentPhotoUrl;
-  resultCard.classList.add('show');
-  loadingLine.style.display = 'block';
-  loadingLine.textContent = 'Sorting…';
-  resultBody.style.display = 'none';
-
-  try {
-    const b64 = await fileToBase64(file);
-    const res = await fetch('/api/sort', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image: b64,
-        mediaType: file.type || 'image/jpeg',
-        boxes: boxCache.map(b => ({ name: b.name, keywords: b.keywords }))
-      })
-    });
-    if (!res.ok) throw new Error('sort failed');
-    const suggestion = await res.json();
-    currentSuggestion = suggestion;
-    renderSuggestedBox(suggestion.box);
-    document.getElementById('reasoning').textContent = [suggestion.item, suggestion.reason].filter(Boolean).join(' — ');
-    loadingLine.style.display = 'none';
-    resultBody.style.display = 'block';
-  } catch (err) {
-    const fb = fallbackBoxName();
-    currentSuggestion = { box: fb, reason: '' };
-    renderSuggestedBox(fb);
-    document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
-    loadingLine.style.display = 'none';
-    resultBody.style.display = 'block';
-  }
 }
 
 function fallbackBoxName() {
@@ -157,25 +149,99 @@ function boxDot(box) {
   return `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${color};border:1px solid rgba(0,0,0,.25);vertical-align:middle;margin-right:6px;"></span>`;
 }
 
-function renderSuggestedBox(boxName) {
-  const box = boxCache.find(b => b.name === boxName);
-  const el = document.getElementById('suggestedBox');
-  el.innerHTML = `${boxDot(box)}${box ? (box.emoji ? box.emoji + ' ' : '') : ''}${boxName || 'Miscellaneous'}`;
+async function handleCapture(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  currentFile = file;
+
+  const resultCard = document.getElementById('resultCard');
+  const resultPhoto = document.getElementById('resultPhoto');
+  const loadingLine = document.getElementById('loadingLine');
+  const resultBody = document.getElementById('resultBody');
+  const dupWarning = document.getElementById('dupWarning');
+
+  currentPhotoUrl = URL.createObjectURL(file);
+  resultPhoto.src = currentPhotoUrl;
+  resultCard.classList.add('show');
+  loadingLine.style.display = 'block';
+  loadingLine.textContent = 'Sorting…';
+  resultBody.style.display = 'none';
+  dupWarning.style.display = 'none';
+  document.getElementById('qtyInput').value = 1;
+
+  try {
+    const b64 = await fileToBase64(file);
+    const eligibleBoxes = boxCache.filter(b => !b.manual_only);
+    const res = await fetch('/api/sort', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: b64,
+        mediaType: file.type || 'image/jpeg',
+        boxes: eligibleBoxes.map(b => ({ name: b.name, keywords: b.keywords }))
+      })
+    });
+    if (!res.ok) throw new Error('sort failed');
+    const suggestion = await res.json();
+    currentSuggestion = suggestion;
+    document.getElementById('itemNameInput').value = suggestion.item || '';
+    document.getElementById('boxPicker').value = suggestion.box || fallbackBoxName();
+    document.getElementById('reasoning').textContent = suggestion.reason || '';
+    await checkDuplicate(suggestion.item);
+    loadingLine.style.display = 'none';
+    resultBody.style.display = 'block';
+  } catch (err) {
+    const fb = fallbackBoxName();
+    currentSuggestion = { box: fb, reason: '' };
+    document.getElementById('itemNameInput').value = '';
+    document.getElementById('boxPicker').value = fb;
+    document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
+    loadingLine.style.display = 'none';
+    resultBody.style.display = 'block';
+  }
+}
+
+async function checkDuplicate(itemName) {
+  const dupWarning = document.getElementById('dupWarning');
+  if (!itemName) { dupWarning.style.display = 'none'; return; }
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data } = await sb.from('items')
+    .select('name, created_at, box:box_id(name)')
+    .ilike('name', itemName)
+    .gt('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (data && data[0]) {
+    const mins = Math.round((Date.now() - new Date(data[0].created_at).getTime()) / 60000);
+    dupWarning.textContent = `⚠ Possible duplicate — "${data[0].name}" was logged ${mins} min ago in ${data[0].box ? data[0].box.name : 'a box'}.`;
+    dupWarning.style.display = 'block';
+  } else {
+    dupWarning.style.display = 'none';
+  }
+}
+
+function cancelCapture() {
+  document.getElementById('resultCard').classList.remove('show');
+  currentFile = null; currentSuggestion = null;
+  document.getElementById('fileInput').value = '';
 }
 
 async function finalize(status) {
   if (!currentFile) return;
-  const boxName = status === 'misc' ? fallbackBoxName() : (currentSuggestion?.box || fallbackBoxName());
+  const boxName = document.getElementById('boxPicker').value || fallbackBoxName();
+  const itemName = document.getElementById('itemNameInput').value.trim() || currentSuggestion?.item || boxName;
+  const qty = parseInt(document.getElementById('qtyInput').value, 10) || 1;
   const box = boxCache.find(b => b.name === boxName) || boxCache.find(b => b.name === fallbackBoxName());
 
   const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
   await sb.storage.from('item-photos').upload(path, currentFile, { contentType: currentFile.type || 'image/jpeg' });
 
   const { data: itemRows } = await sb.from('items').insert({
-    name: currentSuggestion?.item || currentSuggestion?.box || null,
+    name: itemName,
     description: currentSuggestion?.reason || null,
     box_id: box ? box.id : null,
-    status: status
+    status: status,
+    qty: qty
   }).select();
 
   if (itemRows && itemRows[0]) {
@@ -193,21 +259,67 @@ function photoUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/item-photos/${path}`;
 }
 
-async function loadLog() {
+function renderRows(data) {
   const logList = document.getElementById('logList');
-  const { data } = await sb
-    .from('items')
-    .select('id, name, description, status, created_at, box:box_id(name, color_hex, emoji), item_photos(image_path)')
-    .order('created_at', { ascending: false })
-    .limit(15);
-  if (!data || !data.length) { logList.innerHTML = '<div class="empty">No items sorted yet.</div>'; return; }
+  if (!data || !data.length) { logList.innerHTML = '<div class="empty">No items found.</div>'; return; }
   logList.innerHTML = data.map(it => {
     const img = it.item_photos && it.item_photos[0] ? `<img src="${photoUrl(it.item_photos[0].image_path)}" alt="">` : '';
     const boxName = it.box ? it.box.name : 'Unsorted';
     const itemLabel = it.name || boxName;
+    const qtyTxt = it.qty && it.qty > 1 ? ` ×${it.qty}` : '';
     const time = new Date(it.created_at).toLocaleString();
-    return `<div class="log-item">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><span class="status-pill ${it.status}">${it.status}</span></div>`;
+    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span><button class="icon-btn" onclick="startEdit(${it.id})" title="Edit">✎</button><button class="icon-btn" onclick="deleteItem(${it.id})" title="Delete">🗑</button></div></div>`;
   }).join('');
+}
+
+async function loadLog() {
+  const { data } = await sb
+    .from('items')
+    .select('id, name, description, status, created_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .order('created_at', { ascending: false })
+    .limit(showingAll ? 500 : 15);
+  renderRows(data);
+}
+
+async function searchItems(term) {
+  if (!term) { loadLog(); return; }
+  const { data } = await sb
+    .from('items')
+    .select('id, name, description, status, created_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .ilike('name', `%${term}%`)
+    .order('created_at', { ascending: false })
+    .limit(200);
+  renderRows(data);
+}
+
+async function startEdit(id) {
+  const row = document.querySelector(`.log-item[data-id="${id}"]`);
+  if (!row) return;
+  const { data } = await sb.from('items').select('id, name, box_id').eq('id', id).single();
+  if (!data) return;
+  const meta = row.querySelector('.meta');
+  const boxOptions = boxCache.map(b => `<option value="${b.id}" ${b.id === data.box_id ? 'selected' : ''}>${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  meta.innerHTML = `<div class="edit-row">
+    <input type="text" value="${(data.name || '').replace(/"/g, '&quot;')}" id="editName-${id}">
+    <select id="editBox-${id}">${boxOptions}</select>
+    <button class="link-btn" onclick="saveEdit(${id})">Save</button>
+    <button class="link-btn" onclick="loadLog()">Cancel</button>
+  </div>`;
+}
+
+async function saveEdit(id) {
+  const name = document.getElementById(`editName-${id}`).value.trim();
+  const boxId = parseInt(document.getElementById(`editBox-${id}`).value, 10);
+  await sb.from('items').update({ name, box_id: boxId }).eq('id', id);
+  loadLog();
+}
+
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  await sb.from('item_photos').delete().eq('item_id', id);
+  await sb.from('items').delete().eq('id', id);
+  loadLog();
+  loadStreak();
 }
 
 async function loadStreak() {
@@ -217,10 +329,44 @@ async function loadStreak() {
   document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
 }
 
+async function exportCsv() {
+  const { data } = await sb
+    .from('items')
+    .select('name, description, status, created_at, qty, box:box_id(name)')
+    .order('created_at', { ascending: false })
+    .limit(2000);
+  if (!data || !data.length) return;
+  const header = ['Item', 'Box', 'Qty', 'Status', 'Description', 'Date'];
+  const rows = data.map(it => [
+    it.name || '', it.box ? it.box.name : '', it.qty || 1, it.status || '', it.description || '', new Date(it.created_at).toLocaleString()
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `housemaster_export_${Date.now()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
 document.getElementById('fileInput').addEventListener('change', handleCapture);
 document.getElementById('confirmBtn').addEventListener('click', () => finalize('confirmed'));
 document.getElementById('miscBtn').addEventListener('click', () => finalize('misc'));
 document.getElementById('laterBtn').addEventListener('click', () => finalize('later'));
+document.getElementById('cancelBtn').addEventListener('click', cancelCapture);
+document.getElementById('exportBtn').addEventListener('click', exportCsv);
+document.getElementById('toggleAllBtn').addEventListener('click', () => {
+  showingAll = !showingAll;
+  document.getElementById('toggleAllBtn').textContent = showingAll ? 'Show recent' : 'Show all';
+  document.getElementById('searchInput').value = '';
+  loadLog();
+});
+let searchDebounce;
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  clearTimeout(searchDebounce);
+  const term = e.target.value.trim();
+  searchDebounce = setTimeout(() => searchItems(term), 300);
+});
 
 loadBoxes().then(() => { loadLog(); loadStreak(); });
 </script>
