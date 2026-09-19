@@ -276,7 +276,7 @@ function renderRows(data) {
     const itemLabel = it.name || boxName;
     const qtyTxt = it.qty && it.qty > 1 ? ` ×${it.qty}` : '';
     const time = new Date(it.created_at).toLocaleString();
-    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span><button class="icon-btn" onclick="startEdit(${it.id})" title="Edit">✎</button><button class="icon-btn" onclick="deleteItem(${it.id})" title="Delete">🗑</button></div></div>`;
+    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span><button class="icon-btn" onclick="startEdit('${it.id}')" title="Edit">✎</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete">🗑</button></div></div>`;
   }).join('');
 }
 
@@ -310,7 +310,7 @@ async function startEdit(id) {
   meta.innerHTML = `<div class="edit-row">
     <input type="text" value="${(data.name || '').replace(/"/g, '&quot;')}" id="editName-${id}">
     <select id="editBox-${id}">${boxOptions}</select>
-    <button class="link-btn" onclick="saveEdit(${id})">Save</button>
+    <button class="link-btn" onclick="saveEdit('${id}')">Save</button>
     <button class="link-btn" onclick="loadLog()">Cancel</button>
   </div>`;
 }
