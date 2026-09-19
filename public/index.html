@@ -68,6 +68,18 @@
   .edit-row { display:flex; gap:6px; flex-wrap:wrap; flex:1 1 100%; align-items:center; }
   .edit-row input, .edit-row select { padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.82rem; max-width:100%; }
   .edit-row input[type="text"] { flex:1 1 140px; min-width:0; }
+  .split-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 20px; margin-bottom:20px; }
+  .split-card select { width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+  .bin-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .bin-chip { padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.85rem; cursor:pointer; }
+  .bin-chip.active { outline:2px solid var(--accent); font-weight:600; }
+  .bin-chip.add { border-style:dashed; color:var(--sub); }
+  .bin-chip.disabled { opacity:.4; cursor:not-allowed; }
+  .batch-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:20px; display:none; }
+  .batch-card.show { display:block; }
+  .batch-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .batch-row input[type="text"] { flex:1 1 auto; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+  .batch-row input[type="number"] { width:56px; padding:8px 6px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
 </style>
 </head>
 <body>
@@ -87,6 +99,33 @@
       <button class="cam-cancel" id="camCancelBtn" type="button" aria-label="Cancel">✕</button>
       <button class="cam-shutter" id="camShutterBtn" type="button" aria-label="Take photo"></button>
       <button class="cam-switch" id="camSwitchBtn" type="button" aria-label="Switch camera">⟲</button>
+    </div>
+  </div>
+
+  <div class="split-card">
+    <button class="link-btn" id="splitToggleBtn">🗂 Split a box into bins</button>
+    <div id="splitPanel" style="display:none;margin-top:10px;">
+      <div class="field">
+        <label for="familyPicker">Box to split</label>
+        <select id="familyPicker"></select>
+      </div>
+      <div class="field">
+        <label>Bins in this box (up to 5)</label>
+        <div class="bin-chips" id="binChips"></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="action-btn confirm" id="binPhotoBtn" disabled>📷 Photo this bin's items</button>
+      </div>
+      <div class="hint" id="binHint" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div class="batch-card" id="batchCard">
+    <div class="hint" id="batchTargetLabel" style="margin-bottom:10px;"></div>
+    <div id="batchRows"></div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="action-btn confirm" id="batchSaveBtn">✓ Save all to this bin</button>
+      <button class="action-btn cancel" id="batchCancelBtn">Cancel</button>
     </div>
   </div>
 
@@ -139,13 +178,79 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentFile = null, currentPhotoUrl = null, currentSuggestion = null, boxCache = [];
+let selectedBinId = null, captureMode = 'single', batchDetected = [];
 let showingAll = false;
 
 async function loadBoxes() {
   const { data } = await sb.from('boxes').select('*').order('id');
   boxCache = data || [];
   const picker = document.getElementById('boxPicker');
-  picker.innerHTML = boxCache.map(b => `<option value="${b.id}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  const ordered = [];
+  boxCache.filter(b => !b.parent_box_id).forEach(family => {
+    ordered.push(family);
+    boxCache.filter(b => b.parent_box_id === family.id).sort((a, b) => (a.bin_number || 0) - (b.bin_number || 0)).forEach(bin => ordered.push(bin));
+  });
+  picker.innerHTML = ordered.map(b => `<option value="${b.id}">${b.parent_box_id ? '↳ ' : (b.emoji ? b.emoji + ' ' : '')}${b.name}</option>`).join('');
+  renderFamilyPicker();
+}
+
+function familyBoxes() {
+  return boxCache.filter(b => !b.parent_box_id);
+}
+
+function binsFor(familyId) {
+  return boxCache.filter(b => b.parent_box_id === familyId).sort((a, b) => (a.bin_number || 0) - (b.bin_number || 0));
+}
+
+function renderFamilyPicker() {
+  const picker = document.getElementById('familyPicker');
+  const prevValue = picker.value;
+  picker.innerHTML = familyBoxes().map(b => `<option value="${b.id}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  if (prevValue && familyBoxes().some(b => String(b.id) === prevValue)) picker.value = prevValue;
+  renderBinChips();
+}
+
+function renderBinChips() {
+  const familyId = parseInt(document.getElementById('familyPicker').value, 10);
+  const chips = document.getElementById('binChips');
+  const hint = document.getElementById('binHint');
+  const photoBtn = document.getElementById('binPhotoBtn');
+  if (!familyId) { chips.innerHTML = ''; photoBtn.disabled = true; return; }
+  const bins = binsFor(familyId);
+  const chipHtml = bins.map(b => `<button type="button" class="bin-chip ${b.id === selectedBinId ? 'active' : ''}" data-bin="${b.id}">B${b.bin_number}</button>`).join('');
+  const canAdd = bins.length < 5;
+  const addHtml = `<button type="button" class="bin-chip add ${canAdd ? '' : 'disabled'}" id="addBinChip" ${canAdd ? '' : 'disabled'}>+ New bin</button>`;
+  chips.innerHTML = chipHtml + addHtml;
+  chips.querySelectorAll('.bin-chip[data-bin]').forEach(el => {
+    el.addEventListener('click', () => { selectedBinId = parseInt(el.dataset.bin, 10); renderBinChips(); });
+  });
+  const addBtn = document.getElementById('addBinChip');
+  if (addBtn && canAdd) addBtn.addEventListener('click', () => createBin(familyId));
+  photoBtn.disabled = !selectedBinId || !bins.some(b => b.id === selectedBinId);
+  if (!bins.some(b => b.id === selectedBinId)) selectedBinId = null;
+  hint.textContent = bins.length >= 5 ? 'Maximum of 5 bins reached for this box.' : '';
+}
+
+async function createBin(familyId) {
+  const family = boxCache.find(b => b.id === familyId);
+  if (!family) return;
+  const existing = binsFor(familyId);
+  if (existing.length >= 5) return;
+  const nextNum = (existing.reduce((max, b) => Math.max(max, b.bin_number || 0), 0)) + 1;
+  const { data, error } = await sb.from('boxes').insert({
+    name: `${family.name} — B${nextNum}`,
+    color_hex: family.color_hex,
+    color_hex2: family.color_hex2 || null,
+    parent_box_id: family.id,
+    bin_number: nextNum,
+    manual_only: true,
+    is_fallback: false
+  }).select();
+  if (error || !data || !data[0]) { alert('Could not create bin.'); return; }
+  await loadBoxes();
+  document.getElementById('familyPicker').value = String(familyId);
+  selectedBinId = data[0].id;
+  renderBinChips();
 }
 
 function fileToBase64(file) {
@@ -243,8 +348,104 @@ function captureFromCamera() {
     if (!blob) return;
     closeCamera();
     const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-    processCapturedFile(file);
+    if (captureMode === 'batch') {
+      processBatchFile(file);
+    } else {
+      processCapturedFile(file);
+    }
+    captureMode = 'single';
   }, 'image/jpeg', 0.9);
+}
+
+function openBatchCamera() {
+  if (!selectedBinId) return;
+  captureMode = 'batch';
+  openCamera();
+}
+
+async function processBatchFile(file) {
+  const bin = boxCache.find(b => b.id === selectedBinId);
+  if (!bin) return;
+  const batchCard = document.getElementById('batchCard');
+  const batchRows = document.getElementById('batchRows');
+  const targetLabel = document.getElementById('batchTargetLabel');
+  targetLabel.textContent = `Sorting into: ${bin.name} — detecting items…`;
+  batchRows.innerHTML = '';
+  batchCard.classList.add('show');
+  batchDetected = [];
+  currentFile = file;
+
+  try {
+    const b64 = await fileToBase64(file);
+    const res = await fetch('/api/sort-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: b64, mediaType: file.type || 'image/jpeg' })
+    });
+    if (!res.ok) throw new Error('batch sort failed');
+    const parsed = await res.json();
+    batchDetected = Array.isArray(parsed.items) ? parsed.items : [];
+  } catch (err) {
+    batchDetected = [];
+  }
+  if (!batchDetected.length) batchDetected = [{ item: '', qty: 1 }];
+  targetLabel.textContent = `Sorting into: ${bin.name}`;
+  renderBatchReview();
+}
+
+function renderBatchReview() {
+  const batchRows = document.getElementById('batchRows');
+  batchRows.innerHTML = batchDetected.map((it, i) => `
+    <div class="batch-row" data-idx="${i}">
+      <input type="text" value="${(it.item || '').replace(/"/g, '&quot;')}" placeholder="Item name" data-field="item">
+      <input type="number" min="1" value="${it.qty || 1}" data-field="qty">
+      <button class="icon-btn" data-remove="${i}" title="Remove">🗑</button>
+    </div>
+  `).join('') + `<button class="link-btn" id="batchAddRowBtn">+ Add item</button>`;
+  batchRows.querySelectorAll('[data-remove]').forEach(el => {
+    el.addEventListener('click', () => { batchDetected.splice(parseInt(el.dataset.remove, 10), 1); renderBatchReview(); });
+  });
+  const addRowBtn = document.getElementById('batchAddRowBtn');
+  if (addRowBtn) addRowBtn.addEventListener('click', () => { batchDetected.push({ item: '', qty: 1 }); renderBatchReview(); });
+}
+
+function readBatchRows() {
+  const rows = document.querySelectorAll('#batchRows .batch-row');
+  return Array.from(rows).map(row => ({
+    item: row.querySelector('[data-field="item"]').value.trim(),
+    qty: parseInt(row.querySelector('[data-field="qty"]').value, 10) || 1
+  })).filter(r => r.item);
+}
+
+async function saveBatch() {
+  const bin = boxCache.find(b => b.id === selectedBinId);
+  if (!bin) return;
+  const rows = readBatchRows();
+  if (!rows.length) { cancelBatch(); return; }
+
+  let path = null;
+  if (currentFile) {
+    path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    await sb.storage.from('item-photos').upload(path, currentFile, { contentType: currentFile.type || 'image/jpeg' });
+  }
+
+  const { data: itemRows } = await sb.from('items').insert(
+    rows.map(r => ({ name: r.item, description: null, box_id: bin.id, status: 'confirmed', qty: r.qty }))
+  ).select();
+
+  if (path && itemRows && itemRows.length) {
+    await sb.from('item_photos').insert(itemRows.map(row => ({ item_id: row.id, image_path: path })));
+  }
+
+  cancelBatch();
+  loadLog();
+  loadStreak();
+}
+
+function cancelBatch() {
+  document.getElementById('batchCard').classList.remove('show');
+  batchDetected = [];
+  currentFile = null;
 }
 
 async function handleCapture(e) {
@@ -510,6 +711,14 @@ document.getElementById('snapBtn').addEventListener('click', openCamera);
 document.getElementById('camCancelBtn').addEventListener('click', closeCamera);
 document.getElementById('camShutterBtn').addEventListener('click', captureFromCamera);
 document.getElementById('camSwitchBtn').addEventListener('click', switchCamera);
+document.getElementById('splitToggleBtn').addEventListener('click', () => {
+  const panel = document.getElementById('splitPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('familyPicker').addEventListener('change', () => { selectedBinId = null; renderBinChips(); });
+document.getElementById('binPhotoBtn').addEventListener('click', openBatchCamera);
+document.getElementById('batchSaveBtn').addEventListener('click', saveBatch);
+document.getElementById('batchCancelBtn').addEventListener('click', cancelBatch);
 document.getElementById('confirmBtn').addEventListener('click', () => finalize('confirmed'));
 document.getElementById('miscBtn').addEventListener('click', () => finalize('misc'));
 document.getElementById('laterBtn').addEventListener('click', () => finalize('later'));
