@@ -80,6 +80,9 @@
   .batch-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
   .batch-row input[type="text"] { flex:1 1 auto; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
   .batch-row input[type="number"] { width:56px; padding:8px 6px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+  .search-row { display:flex; gap:8px; align-items:center; }
+  .search-row .search-box { flex:1 1 auto; }
+  .search-row .link-btn { flex-shrink:0; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -159,13 +162,17 @@
   </div>
 
   <div class="log">
-    <h2>Recent
+    <h2 id="logTitle">Recent
       <span class="actions">
         <button class="link-btn" id="toggleAllBtn">Show all</button>
+        <button class="link-btn" id="toggleRemovedBtn">Removed items</button>
         <button class="link-btn" id="exportBtn">Export (color)</button>
       </span>
     </h2>
-    <input type="text" class="search-box" id="searchInput" placeholder="Search items by name…">
+    <div class="search-row">
+      <input type="text" class="search-box" id="searchInput" placeholder="Search items by name…">
+      <button class="link-btn" id="lookupPhotoBtn" title="Find by photo">📷 Find by photo</button>
+    </div>
     <div id="logList"><div class="empty">No items sorted yet.</div></div>
   </div>
 </div>
@@ -179,6 +186,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentFile = null, currentPhotoUrl = null, currentSuggestion = null, boxCache = [];
 let selectedBinId = null, captureMode = 'single', batchDetected = [];
+let showingRemoved = false;
 let showingAll = false;
 
 async function loadBoxes() {
@@ -350,11 +358,41 @@ function captureFromCamera() {
     const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
     if (captureMode === 'batch') {
       processBatchFile(file);
+    } else if (captureMode === 'lookup') {
+      processLookupFile(file);
     } else {
       processCapturedFile(file);
     }
     captureMode = 'single';
   }, 'image/jpeg', 0.9);
+}
+
+function openLookupCamera() {
+  captureMode = 'lookup';
+  openCamera();
+}
+
+async function processLookupFile(file) {
+  const searchInput = document.getElementById('searchInput');
+  searchInput.value = 'Identifying…';
+  try {
+    const b64 = await fileToBase64(file);
+    const res = await fetch('/api/sort', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: b64, mediaType: file.type || 'image/jpeg', boxes: [] })
+    });
+    const suggestion = await res.json();
+    const term = suggestion.item || '';
+    searchInput.value = term;
+    showingRemoved = false;
+    document.getElementById('toggleRemovedBtn').textContent = 'Removed items';
+    searchItems(term);
+  } catch (err) {
+    searchInput.value = '';
+    loadLog();
+  }
+  searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function openBatchCamera() {
@@ -564,35 +602,53 @@ function photoUrl(path) {
 
 function renderRows(data) {
   const logList = document.getElementById('logList');
-  if (!data || !data.length) { logList.innerHTML = '<div class="empty">No items found.</div>'; return; }
+  if (!data || !data.length) { logList.innerHTML = `<div class="empty">${showingRemoved ? 'No removed items.' : 'No items found.'}</div>`; return; }
   logList.innerHTML = data.map(it => {
     const img = it.item_photos && it.item_photos[0] ? `<img src="${photoUrl(it.item_photos[0].image_path)}" alt="">` : '';
     const boxName = it.box ? it.box.name : 'Unsorted';
     const itemLabel = it.name || boxName;
     const qtyTxt = it.qty && it.qty > 1 ? ` ×${it.qty}` : '';
     const time = new Date(it.created_at).toLocaleString();
-    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div></div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span><button class="icon-btn" onclick="startEdit('${it.id}')" title="Edit">✎</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete">🗑</button></div></div>`;
+    const removedNote = it.removed_at ? `<div style="color:var(--sub);font-size:.75rem;">Removed ${new Date(it.removed_at).toLocaleString()}</div>` : '';
+    const actions = it.removed_at
+      ? `<button class="icon-btn" onclick="restoreItem('${it.id}')" title="Restore to bin">↺</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete permanently">🗑</button>`
+      : `<button class="icon-btn" onclick="startEdit('${it.id}')" title="Edit">✎</button><button class="icon-btn" onclick="removeItem('${it.id}')" title="Remove from bin (keeps history)">📤</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete permanently">🗑</button>`;
+    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div>${removedNote}</div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span>${actions}</div></div>`;
   }).join('');
 }
 
 async function loadLog() {
-  const { data } = await sb
+  let q = sb
     .from('items')
-    .select('id, name, description, status, created_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
     .order('created_at', { ascending: false })
     .limit(showingAll ? 500 : 15);
+  q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
+  const { data } = await q;
   renderRows(data);
 }
 
 async function searchItems(term) {
   if (!term) { loadLog(); return; }
-  const { data } = await sb
+  let q = sb
     .from('items')
-    .select('id, name, description, status, created_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
     .ilike('name', `%${term}%`)
     .order('created_at', { ascending: false })
     .limit(200);
+  q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
+  const { data } = await q;
   renderRows(data);
+}
+
+async function removeItem(id) {
+  await sb.from('items').update({ removed_at: new Date().toISOString() }).eq('id', id);
+  loadLog();
+}
+
+async function restoreItem(id) {
+  await sb.from('items').update({ removed_at: null }).eq('id', id);
+  loadLog();
 }
 
 async function startEdit(id) {
@@ -618,7 +674,7 @@ async function saveEdit(id) {
 }
 
 async function deleteItem(id) {
-  if (!confirm('Delete this item?')) return;
+  if (!confirm('Permanently delete this item? This cannot be undone — use "remove" instead if it might come back.')) return;
   await sb.from('item_photos').delete().eq('item_id', id);
   await sb.from('items').delete().eq('id', id);
   loadLog();
@@ -724,6 +780,14 @@ document.getElementById('miscBtn').addEventListener('click', () => finalize('mis
 document.getElementById('laterBtn').addEventListener('click', () => finalize('later'));
 document.getElementById('cancelBtn').addEventListener('click', cancelCapture);
 document.getElementById('exportBtn').addEventListener('click', exportCsv);
+document.getElementById('toggleRemovedBtn').addEventListener('click', () => {
+  showingRemoved = !showingRemoved;
+  document.getElementById('toggleRemovedBtn').textContent = showingRemoved ? 'Back to active' : 'Removed items';
+  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? 'Removed ' : 'Recent';
+  document.getElementById('searchInput').value = '';
+  loadLog();
+});
+document.getElementById('lookupPhotoBtn').addEventListener('click', openLookupCamera);
 document.getElementById('toggleAllBtn').addEventListener('click', () => {
   showingAll = !showingAll;
   document.getElementById('toggleAllBtn').textContent = showingAll ? 'Show recent' : 'Show all';
