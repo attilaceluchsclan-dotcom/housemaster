@@ -132,6 +132,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
 const SUPABASE_URL = "https://clteinrzpebrkrkthsvx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdGVpbnJ6cGVicmtya3Roc3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODU0MTUsImV4cCI6MjEwNTM2MTQxNX0.EO4rB4sMIEwLlUlec2Ep4MB9a47vF0r_zflUOzdJX9Y";
@@ -442,6 +443,12 @@ function textColorFor(hex) {
   return luminance > 0.6 ? '#000000' : '#ffffff';
 }
 
+function hexToArgb(hex) {
+  const h = (hex || '#f2f2f2').replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  return 'FF' + full.toUpperCase();
+}
+
 async function exportCsv() {
   const { data } = await sb
     .from('items')
@@ -449,27 +456,51 @@ async function exportCsv() {
     .order('created_at', { ascending: false })
     .limit(2000);
   if (!data || !data.length) return;
-  // column widths (px) — wide enough that box/item names never get clipped in Excel/WPS
-  const colWidths = [220, 170, 50, 90, 320, 150];
-  const colgroup = colWidths.map(w => `<col style="width:${w}px;mso-width-px:${w};mso-width-source:userset;">`).join('');
-  const headerCells = ['Item', 'Box', 'Qty', 'Status', 'Description', 'Date']
-    .map((h, i) => `<th style="background:#333;color:#fff;padding:6px 10px;border:1px solid #999;text-align:left;white-space:normal;width:${colWidths[i]}px;">${h}</th>`).join('');
-  const bodyRows = data.map(it => {
-    const bg = it.box && it.box.color_hex ? it.box.color_hex : '#f2f2f2';
-    const fg = textColorFor(bg);
-    const values = [
-      it.name || '', it.box ? it.box.name : '', it.qty || 1, it.status || '', it.description || '', new Date(it.created_at).toLocaleString()
-    ];
-    const cells = values.map((v, i) => `<td style="background:${bg};color:${fg};padding:6px 10px;border:1px solid #999;white-space:normal;vertical-align:top;width:${colWidths[i]}px;">${escapeHtml(v)}</td>`).join('');
-    return `<tr>${cells}</tr>`;
-  }).join('');
-  const html = `<html><head><meta charset="UTF-8"></head><body><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;table-layout:fixed;">
-    <colgroup>${colgroup}</colgroup>
-    <thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Housemaster');
+
+  // Box first, then Item — matches how the boxes are actually used to find things.
+  sheet.columns = [
+    { header: 'Box', key: 'box', width: 24 },
+    { header: 'Item', key: 'item', width: 32 },
+    { header: 'Qty', key: 'qty', width: 8 },
+    { header: 'Status', key: 'status', width: 14 },
+    { header: 'Description', key: 'description', width: 48 },
+    { header: 'Date', key: 'date', width: 22 }
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.eachCell(cell => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF333333' } };
+    cell.alignment = { vertical: 'middle' };
+  });
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  data.forEach(it => {
+    const bgHex = it.box && it.box.color_hex ? it.box.color_hex : '#f2f2f2';
+    const fgHex = textColorFor(bgHex);
+    const row = sheet.addRow({
+      box: it.box ? it.box.name : '',
+      item: it.name || '',
+      qty: it.qty || 1,
+      status: it.status || '',
+      description: it.description || '',
+      date: new Date(it.created_at).toLocaleString()
+    });
+    row.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(bgHex) } };
+      cell.font = { color: { argb: hexToArgb(fgHex) } };
+      cell.alignment = { vertical: 'top', wrapText: true };
+    });
+  });
+
+  const buf = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `housemaster_export_${Date.now()}.xls`;
+  a.href = url; a.download = `housemaster_export_${Date.now()}.xlsx`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
