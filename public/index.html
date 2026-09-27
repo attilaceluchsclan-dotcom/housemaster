@@ -107,64 +107,86 @@
   .cat-badge { display:none; align-items:center; gap:10px; border-radius:10px; padding:10px 12px; margin-bottom:12px; font:700 1.25rem/1.1 var(--display); letter-spacing:.03em; text-transform:uppercase; }
   .cat-badge.show { display:flex; }
   .cat-badge .code { font:500 .8rem var(--mono); opacity:.85; margin-left:auto; }
-  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:10px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); display:none; }
-  .toast.show { display:block; }
+  .toast-old { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:10px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); display:none; }
+
+  body { padding-bottom:210px; font-size:16px; }
+  .top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .brand { font:700 1.15rem var(--display); letter-spacing:.12em; }
+  #householdPicker { padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:700 .95rem var(--display); letter-spacing:.06em; text-transform:uppercase; }
+  .rapid { margin-left:auto; border:1px solid var(--line); background:var(--card); color:var(--sub); border-radius:99px; padding:6px 12px; font:700 .85rem var(--mono); cursor:pointer; }
+  .rapid[aria-pressed="true"] { background:#2ee6a6; color:#062a1d; border-color:#2ee6a6; }
+  .sec-h { font:700 1.6rem var(--display); letter-spacing:.06em; margin:4px 0 10px; display:flex; justify-content:space-between; align-items:baseline; }
+  .sec-h small { font:500 .75rem var(--mono); color:var(--sub); letter-spacing:0; text-transform:none; }
+  .storage { margin-bottom:18px; }
+  .storage .split-card { margin:10px 0 0; padding:10px 14px; }
+  .bin-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .bin-tile { display:flex; flex-direction:column; align-items:stretch; text-align:left; border:none; border-radius:10px; padding:7px 7px 8px; cursor:pointer; min-height:74px; position:relative; font:inherit; }
+  .bin-tile .cd { font:800 1.25rem/1 var(--display); letter-spacing:.03em; }
+  .bin-tile .cd, .bin-tile .ct, .bin-tile .nm { color:inherit; }
+  .bin-tile .ct { position:absolute; top:6px; right:7px; font:700 .9rem var(--mono); }
+  .bin-tile .nm { font:600 .62rem/1.15 var(--body); margin-top:3px; opacity:.92; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .bin-tile .bar { margin-top:auto; height:4px; border-radius:2px; background:rgba(0,0,0,.28); }
+  .bin-tile .bar i { display:block; height:100%; border-radius:2px; background:currentColor; }
+  body.searching .storage { display:none; }
+  .dock { position:fixed; left:0; right:0; bottom:0; z-index:900; background:var(--bg); border-top:1px solid var(--line); padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)); box-shadow:0 -8px 24px rgba(0,0,0,.25); }
+  .dock > * { max-width:480px; margin-left:auto; margin-right:auto; }
+  .find-lbl { font:700 1.15rem var(--display); letter-spacing:.06em; margin-bottom:6px; }
+  .find-row { display:flex; gap:8px; }
+  .find-input { flex:1; position:relative; display:flex; align-items:center; min-width:0; }
+  .find-input svg { position:absolute; left:12px; width:22px; height:22px; color:#777; pointer-events:none; }
+  .find-input input { width:100%; height:54px; padding:0 40px 0 42px; border-radius:14px; border:none; background:#fff; color:#111; font:500 1.1rem var(--body); -webkit-appearance:none; appearance:none; }
+  .find-input input::-webkit-search-cancel-button { display:none; }
+  .find-input input:focus { outline:3px solid var(--accent); }
+  .clear-btn { position:absolute; right:8px; width:30px; height:30px; border:none; border-radius:50%; background:#e6e3ea; color:#111; display:none; cursor:pointer; }
+  body.searching .clear-btn { display:block; }
+  .sq { width:54px; height:54px; flex:none; border:none; border-radius:14px; background:var(--card); color:var(--ink); font-size:1.4rem; cursor:pointer; display:grid; place-items:center; border:1px solid var(--line); }
+  .sq.mic { background:#ffc53d; color:#1b1400; border-color:#ffc53d; }
+  .sort-btn { display:block; width:100%; margin-top:10px; height:64px; border:none; border-radius:16px; background:#7c4dff; color:#fff; font:700 1.7rem var(--display); letter-spacing:.05em; cursor:pointer; }
+  .sort-btn:active { transform:scale(.98); }
+  .snap-btn { display:none; }
+  .countdown { display:flex; align-items:center; gap:12px; background:#2ee6a6; color:#062a1d; border-radius:12px; padding:8px 12px; margin-bottom:12px; font-weight:600; }
+  .countdown[hidden] { display:none; }
+  .countdown .ring { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(#062a1d var(--p,100%), rgba(6,42,29,.2) 0); flex:none; }
+  .countdown .ring b { width:34px; height:34px; border-radius:50%; background:#2ee6a6; display:grid; place-items:center; font:700 1.1rem var(--mono); }
+  .voice { position:fixed; inset:0; z-index:1500; background:rgba(12,10,16,.96); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; }
+  .voice[hidden] { display:none; }
+  .voice .orb { width:170px; height:170px; border-radius:50%; display:grid; place-items:center; color:#1b1400; background:radial-gradient(circle,#ffc53d 0 45%,rgba(255,197,61,.25) 46% 70%,rgba(255,197,61,.08) 71%); animation:pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes pulse { to { transform:scale(1.08); } }
+  .v-h { font:700 2.4rem var(--display); letter-spacing:.05em; }
+  .v-said { font-size:1.3rem; font-weight:600; max-width:22ch; }
+  .v-stop { margin-top:10px; border:1px solid #555; background:none; color:#fff; border-radius:99px; padding:10px 22px; font-weight:600; }
+  .boxpage { position:fixed; inset:0; z-index:1200; background:var(--bg); overflow-y:auto; padding-bottom:40px; }
+  .boxpage[hidden] { display:none; }
+  .bp-head { padding:16px 16px 18px; }
+  .bp-back { border:none; background:rgba(0,0,0,.25); color:inherit; border-radius:99px; padding:8px 14px; font-weight:700; cursor:pointer; }
+  .bp-code { font:800 4rem/.9 var(--display); margin-top:14px; }
+  .bp-name { font:700 1.35rem var(--body); }
+  .bp-stats { font:500 .85rem var(--mono); margin-top:8px; opacity:.9; }
+  .bp-full { margin-top:10px; height:10px; border-radius:5px; background:rgba(0,0,0,.28); }
+  .bp-full i { display:block; height:100%; border-radius:5px; background:currentColor; }
+  .bp-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:14px 16px; max-width:520px; margin:0 auto; }
+  .bp-item { position:relative; height:160px; border-radius:14px; overflow:hidden; background:var(--card) center/cover; border:1px solid var(--line); }
+  .bp-item span { position:absolute; left:0; right:0; bottom:0; padding:22px 8px 7px; font-size:.8rem; font-weight:600; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.85)); }
+  .bp-item .q { position:absolute; top:6px; right:6px; background:rgba(0,0,0,.6); color:#fff; font:700 .75rem var(--mono); padding:2px 6px; border-radius:6px; }
+  .bp-empty { color:var(--sub); padding:30px 16px; text-align:center; }
+  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(200px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:10px 12px 10px 16px; border-radius:12px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); display:none; align-items:center; gap:12px; }
+  .toast.show { display:flex; }
+  #undoBtn { border:none; background:#ffc53d; color:#1b1400; font:700 .85rem var(--mono); border-radius:8px; padding:6px 10px; cursor:pointer; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Housemaster <span class="hl" id="hhTitle"></span></h1>
-  <div class="field" style="margin:6px 0 4px;max-width:260px;">
-    <label for="householdPicker">Household</label>
-    <select id="householdPicker"><option value="1">Household 1</option><option value="2">Household 2</option></select>
-  </div>
+  <header class="top">
+    <span class="brand">HOUSEMASTER</span>
+    <select id="householdPicker" aria-label="Household"><option value="1">Household 1</option><option value="2">Household 2</option></select>
+    <button type="button" id="rapidBtn" class="rapid" aria-pressed="false" title="Rapid mode: saves by itself after 3 seconds">⚡ Rapid</button>
+  </header>
   <div class="streak" id="streakLine">Loading…</div>
-
-  <div class="capture-card">
-    <button class="snap-btn" id="snapBtn" type="button">📷</button>
-    <div class="hint">Tap to photograph an item</div>
-    <input type="file" id="fileInput" accept="image/*" capture="environment">
-  </div>
-
-  <div class="camera-overlay" id="cameraOverlay">
-    <video id="cameraVideo" autoplay playsinline muted></video>
-    <div class="camera-controls">
-      <button class="cam-cancel" id="camCancelBtn" type="button" aria-label="Cancel">✕</button>
-      <button class="cam-shutter" id="camShutterBtn" type="button" aria-label="Take photo"></button>
-      <button class="cam-switch" id="camSwitchBtn" type="button" aria-label="Switch camera">⟲</button>
-    </div>
-  </div>
-
-  <div class="split-card">
-    <button class="link-btn" id="splitToggleBtn">🗂 Split a box into bins</button>
-    <div id="splitPanel" style="display:none;margin-top:10px;">
-      <div class="field">
-        <label for="familyPicker">Box to split</label>
-        <select id="familyPicker"></select>
-      </div>
-      <div class="field">
-        <label>Bins in this box (up to 5)</label>
-        <div class="bin-chips" id="binChips"></div>
-      </div>
-      <div class="btn-row" style="margin-top:10px;">
-        <button class="action-btn confirm" id="binPhotoBtn" disabled>📷 Photo this bin's items</button>
-      </div>
-      <div class="hint" id="binHint" style="margin-top:6px;"></div>
-    </div>
-  </div>
-
-  <div class="batch-card" id="batchCard">
-    <div class="hint" id="batchTargetLabel" style="margin-bottom:10px;"></div>
-    <div id="batchRows"></div>
-    <div class="btn-row" style="margin-top:10px;">
-      <button class="action-btn confirm" id="batchSaveBtn">✓ Save all to this bin</button>
-      <button class="action-btn cancel" id="batchCancelBtn">Cancel</button>
-    </div>
-  </div>
-
+  <span id="hhTitle" hidden></span>
   <div class="result-card" id="resultCard">
     <img class="result-photo" id="resultPhoto" alt="captured item">
     <div id="loadingLine" class="loading" style="display:none;">Sorting…</div>
+    <div id="countdown" class="countdown" hidden><span class="ring"><b id="cdNum">3</b></span><span>Saving by itself… tap anything to stop</span></div>
     <div id="resultBody" style="display:none;">
       <div id="catBadge" class="cat-badge"></div>
       <div id="dupWarning" class="dup-warning" style="display:none;"></div>
@@ -191,11 +213,49 @@
       </div>
     </div>
   </div>
-
-  <div class="bins-card">
-    <h2>Bins <small id="binsHint">tap a bin to filter</small></h2>
-    <div class="bin-grid" id="binGrid"></div>
+  <div class="batch-card" id="batchCard">
+    <div class="hint" id="batchTargetLabel" style="margin-bottom:10px;"></div>
+    <div id="batchRows"></div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="action-btn confirm" id="batchSaveBtn">✓ Save all to this bin</button>
+      <button class="action-btn cancel" id="batchCancelBtn">Cancel</button>
+    </div>
   </div>
+
+
+  <div class="camera-overlay" id="cameraOverlay">
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    <div class="camera-controls">
+      <button class="cam-cancel" id="camCancelBtn" type="button" aria-label="Cancel">✕</button>
+      <button class="cam-shutter" id="camShutterBtn" type="button" aria-label="Take photo"></button>
+      <button class="cam-switch" id="camSwitchBtn" type="button" aria-label="Switch camera">⟲</button>
+    </div>
+  </div>
+
+
+
+
+  <section class="storage" id="storageSec">
+    <h2 class="sec-h">STORAGE <small>tap a box to open it</small></h2>
+    <div class="bin-grid" id="binGrid"></div>
+  <div class="split-card">
+    <button class="link-btn" id="splitToggleBtn">🗂 Split a box into sections</button>
+    <div id="splitPanel" style="display:none;margin-top:10px;">
+      <div class="field">
+        <label for="familyPicker">Box to split</label>
+        <select id="familyPicker"></select>
+      </div>
+      <div class="field">
+        <label>Sections in this box (up to 5)</label>
+        <div class="bin-chips" id="binChips"></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="action-btn confirm" id="binPhotoBtn" disabled>📷 Photo this section's items</button>
+      </div>
+      <div class="hint" id="binHint" style="margin-top:6px;"></div>
+    </div>
+  </div>
+  </section>
 
   <div class="log">
     <h2 id="logTitle">Recent
@@ -205,14 +265,34 @@
         <button class="link-btn" id="exportBtn">Export (color)</button>
       </span>
     </h2>
-    <div class="search-row">
-      <input type="text" class="search-box" id="searchInput" placeholder="Search items by name…">
-      <button class="link-btn" id="lookupPhotoBtn" title="Find by photo">📷 Find by photo</button>
-    </div>
     <div id="logList"><div class="empty">No items sorted yet.</div></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="dock" id="dock">
+  <div class="find-lbl">FIND THE ITEM</div>
+  <div class="find-row">
+    <div class="find-input">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <input type="search" id="searchInput" placeholder="Type item name" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="clear-btn" id="clearSearchBtn" aria-label="Clear search">✕</button>
+    </div>
+    <button type="button" class="sq mic" id="micBtn" aria-label="Search by voice"><svg viewBox="0 0 24 24" width="24" height="24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></button>
+    <button type="button" class="sq" id="lookupPhotoBtn" aria-label="Find by photo">📷</button>
+  </div>
+  <button class="sort-btn" id="snapBtn" type="button">📷 SORT NEW ITEM</button>
+  <input type="file" id="fileInput" accept="image/*" capture="environment">
+</div>
+<div class="voice" id="voiceOverlay" hidden>
+  <div class="orb"><svg viewBox="0 0 24 24" width="64" height="64"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div>
+  <div class="v-h">LISTENING…</div>
+  <div class="v-said" id="voiceSaid">Say the item, e.g. “Where is the Sudocrem?”</div>
+  <button type="button" class="v-stop" id="voiceStop">Stop</button>
+</div>
+<div class="boxpage" id="boxPage" hidden>
+  <div class="bp-head" id="bpHead"></div>
+  <div class="bp-grid" id="bpGrid"></div>
+</div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="undoBtn" hidden>UNDO</button></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -236,6 +316,96 @@ function readHousehold() {
 let HH = readHousehold();
 let filterBoxId = null;
 let binCounts = {};
+const BOX_CAPACITY = 30; // rough "full" level for the fullness bar
+function shortCode(b) {
+  const w = (b.name || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/);
+  return (w.length > 1 ? w.slice(0, 3).map(x => x[0]).join('') : (w[0] || '?').slice(0, 3)).toUpperCase();
+}
+let rapid = false;
+try { rapid = localStorage.getItem('hm_rapid') === '1'; } catch (e) {}
+let lastSaved = null, cdTimer = null;
+
+// --- sound + vibration on save ---
+let audioCtx = null;
+function ding() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    [[880, 0], [1320, 0.12]].forEach(([f, d]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.35, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.25);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t + d); o.stop(t + d + 0.3);
+    });
+  } catch (e) {}
+  try { navigator.vibrate && navigator.vibrate(60); } catch (e) {}
+}
+
+// --- rapid mode countdown ---
+function setRapid(on) {
+  rapid = on;
+  try { localStorage.setItem('hm_rapid', on ? '1' : '0'); } catch (e) {}
+  document.getElementById('rapidBtn').setAttribute('aria-pressed', String(on));
+}
+function startCountdown() {
+  cancelCountdown();
+  const box = document.getElementById('countdown'), num = document.getElementById('cdNum'), ring = box.querySelector('.ring');
+  let left = 3000; const step = 100;
+  box.hidden = false; num.textContent = '3'; ring.style.setProperty('--p', '100%');
+  cdTimer = setInterval(() => {
+    left -= step;
+    num.textContent = String(Math.ceil(left / 1000));
+    ring.style.setProperty('--p', Math.max(0, left / 30) + '%');
+    if (left <= 0) { cancelCountdown(); finalize('confirmed'); }
+  }, step);
+}
+function cancelCountdown() {
+  if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+  const box = document.getElementById('countdown'); if (box) box.hidden = true;
+}
+
+// --- undo last save ---
+async function undoLast() {
+  if (!lastSaved) return;
+  const { ids, path } = lastSaved; lastSaved = null;
+  document.getElementById('undoBtn').hidden = true;
+  await sb.from('item_photos').delete().in('item_id', ids);
+  await sb.from('items').delete().in('id', ids);
+  if (path) { try { await sb.storage.from('item-photos').remove([path]); } catch (e) {} }
+  toast('Undone');
+  loadLog(); loadStreak();
+}
+
+// --- box page ---
+async function openBoxPage(familyId) {
+  const fam = boxCache.find(b => b.id === familyId); if (!fam) return;
+  const ids = [familyId, ...binsFor(familyId).map(b => b.id)];
+  const bg = fam.color_hex || '#999999', fg = textColorFor(bg);
+  const n = binCounts[familyId] || 0, pct = Math.min(100, Math.round(n / BOX_CAPACITY * 100));
+  const code = fam.emoji && /^[A-Z]{3}$/.test(fam.emoji) ? fam.emoji : shortCode(fam);
+  const head = document.getElementById('bpHead');
+  head.style.background = swatchBg(fam); head.style.color = fg;
+  head.innerHTML = `<button type="button" class="bp-back" id="bpBack">← Back</button>
+    <div class="bp-code">${escapeHtml(code)}</div><div class="bp-name">${escapeHtml(fam.name)}</div>
+    <div class="bp-stats">${n} item${n === 1 ? '' : 's'} · about ${pct}% full (of ~${BOX_CAPACITY})</div>
+    <div class="bp-full"><i style="width:${pct}%"></i></div>`;
+  document.getElementById('bpBack').onclick = closeBoxPage;
+  const grid = document.getElementById('bpGrid');
+  grid.innerHTML = '<div class="bp-empty">Loading…</div>';
+  document.getElementById('boxPage').hidden = false;
+  document.getElementById('boxPage').scrollTop = 0;
+  history.pushState({ boxPage: familyId }, '');
+  const { data } = await sb.from('items').select('id, name, qty, item_photos(image_path)').in('box_id', ids).eq('household_id', HH).is('removed_at', null).order('created_at', { ascending: false }).limit(500);
+  grid.innerHTML = (data && data.length) ? data.map(it => {
+    const ph = it.item_photos && it.item_photos[0] ? `background-image:url('${photoUrl(it.item_photos[0].image_path)}')` : '';
+    return `<div class="bp-item" style="${ph}">${it.qty > 1 ? `<b class="q">×${it.qty}</b>` : ''}<span>${escapeHtml(it.name || '')}</span></div>`;
+  }).join('') : '<div class="bp-empty">Nothing in this box yet.</div>';
+}
+function closeBoxPage() {
+  const bp = document.getElementById('boxPage');
+  if (!bp.hidden) { bp.hidden = true; if (history.state && history.state.boxPage) history.back(); }
+}
+window.addEventListener('popstate', () => { document.getElementById('boxPage').hidden = true; });
 
 function familyOf(boxId) {
   const b = boxCache.find(x => x.id === boxId);
@@ -253,10 +423,14 @@ async function loadCounts() {
 }
 function renderBinGrid() {
   const grid = document.getElementById('binGrid');
-  grid.innerHTML = familyBoxes().map(b => `<button type="button" class="bin-tile" data-box="${b.id}" aria-pressed="${filterBoxId === b.id}">
-      <span class="sw" style="background:${swatchBg(b)}"></span>
-      <span><span class="nm">${escapeHtml(b.name)}</span>${b.emoji && /^[A-Z]{3}$/.test(b.emoji) ? `<br><span class="cd">${b.emoji}</span>` : ''}</span>
-      <span class="ct">${binCounts[b.id] || 0}</span></button>`).join('');
+  grid.innerHTML = familyBoxes().map(b => {
+    const n = binCounts[b.id] || 0;
+    const code = b.emoji && /^[A-Z]{3}$/.test(b.emoji) ? b.emoji : shortCode(b);
+    return `<button type="button" class="bin-tile" data-box="${b.id}" style="background:${swatchBg(b)};color:${textColorFor(b.color_hex || '#999999')}" aria-label="${escapeHtml(b.name)}, ${n} items">
+      <span class="cd">${escapeHtml(code)}</span><span class="ct">${n}</span>
+      <span class="nm">${escapeHtml(b.name)}</span>
+      <span class="bar"><i style="width:${Math.min(100, Math.round(n / BOX_CAPACITY * 100))}%"></i></span></button>`;
+  }).join('');
 }
 function flashBin(boxId) {
   const f = familyOf(boxId);
@@ -264,10 +438,12 @@ function flashBin(boxId) {
   if (!el) return;
   el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
 }
-function toast(msg) {
+function toast(msg, withUndo) {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('undoBtn').hidden = !withUndo;
+  t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.classList.remove('show'); if (withUndo) lastSaved = null; }, withUndo ? 10000 : 2600);
 }
 function updateBadge() {
   const badge = document.getElementById('catBadge');
@@ -300,7 +476,7 @@ function setHousehold(id) {
   history.replaceState(null, '', '#h' + id);
   selectedBinId = null; filterBoxId = null; setTitle();
   cancelCapture(); cancelBatch();
-  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').value = ''; setSearching('');
   loadBoxes().then(() => { loadLog(); loadStreak(); renderBinChips(); });
 }
 
@@ -502,6 +678,7 @@ async function processLookupFile(file) {
     const suggestion = await res.json();
     const term = suggestion.item || '';
     searchInput.value = term;
+    setSearching(term);
     showingRemoved = false;
     document.getElementById('toggleRemovedBtn').textContent = 'Removed items';
     searchItems(term);
@@ -509,7 +686,7 @@ async function processLookupFile(file) {
     searchInput.value = '';
     loadLog();
   }
-  searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window.scrollTo({ top: document.getElementById('logTitle').offsetTop - 10, behavior: 'smooth' });
 }
 
 function openBatchCamera() {
@@ -591,9 +768,11 @@ async function saveBatch() {
   if (path && itemRows && itemRows.length) {
     await sb.from('item_photos').insert(itemRows.map(row => ({ item_id: row.id, image_path: path })));
   }
+  if (itemRows && itemRows.length) lastSaved = { ids: itemRows.map(r => r.id), path };
+  ding();
 
   cancelBatch();
-  toast(`Saved ${rows.length} item${rows.length === 1 ? '' : 's'} to ${bin.name}`);
+  toast(`Saved ${rows.length} item${rows.length === 1 ? '' : 's'} to ${bin.name}`, !!lastSaved);
   loadLog();
   await loadStreak();
   flashBin(bin.id);
@@ -653,6 +832,8 @@ async function processCapturedFile(file) {
     await checkDuplicate(suggestion.item);
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (rapid && document.getElementById('dupWarning').style.display === 'none') startCountdown();
   } catch (err) {
     currentSuggestion = { box: fallbackBoxName(), reason: '' };
     document.getElementById('itemNameInput').value = '';
@@ -685,6 +866,7 @@ async function checkDuplicate(itemName) {
 }
 
 function cancelCapture() {
+  cancelCountdown();
   document.getElementById('resultCard').classList.remove('show');
   currentFile = null; currentSuggestion = null;
   document.getElementById('fileInput').value = '';
@@ -711,15 +893,19 @@ async function finalize(status) {
 
   if (itemRows && itemRows[0]) {
     await sb.from('item_photos').insert({ item_id: itemRows[0].id, image_path: path });
+    lastSaved = { ids: [itemRows[0].id], path };
   }
+  cancelCountdown();
+  ding();
 
   document.getElementById('resultCard').classList.remove('show');
   currentFile = null; currentSuggestion = null;
   document.getElementById('fileInput').value = '';
-  if (box) { toast(`Saved to ${box.name}${status === 'later' ? ' (check later)' : ''}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  if (box) toast(`Saved to ${box.name}${status === 'later' ? ' (check later)' : ''}`, !!lastSaved);
   loadLog();
   await loadStreak();
   if (box) flashBin(box.id);
+  if (rapid && status === 'confirmed') setTimeout(() => openCamera(), 700);
 }
 
 function photoUrl(path) {
@@ -763,13 +949,18 @@ async function searchItems(term) {
   let q = sb
     .from('items')
     .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
-    .ilike('name', `%${term}%`)
+    .or(`name.ilike.%${term.replace(/[,()%*]/g, ' ').trim()}%,description.ilike.%${term.replace(/[,()%*]/g, ' ').trim()}%`)
     .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(200);
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
   const { data } = await q;
+  document.getElementById('logTitle').firstChild.textContent = `Results (${data ? data.length : 0}) `;
   renderRows(data);
+}
+
+function setSearching(term) {
+  document.body.classList.toggle('searching', !!term);
 }
 
 async function removeItem(id) {
@@ -829,7 +1020,7 @@ function textColorFor(hex) {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? '#000000' : '#ffffff';
+  return luminance > 0.55 ? '#111111' : '#ffffff';
 }
 
 function hexToArgb(hex) {
@@ -917,36 +1108,68 @@ document.getElementById('toggleRemovedBtn').addEventListener('click', () => {
   showingRemoved = !showingRemoved;
   document.getElementById('toggleRemovedBtn').textContent = showingRemoved ? 'Back to active' : 'Removed items';
   document.getElementById('logTitle').firstChild.textContent = showingRemoved ? 'Removed ' : 'Recent';
-  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').value = ''; setSearching('');
   loadLog();
 });
 document.getElementById('lookupPhotoBtn').addEventListener('click', openLookupCamera);
 document.getElementById('toggleAllBtn').addEventListener('click', () => {
   showingAll = !showingAll;
   document.getElementById('toggleAllBtn').textContent = showingAll ? 'Show recent' : 'Show all';
-  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').value = ''; setSearching('');
   loadLog();
 });
 let searchDebounce;
 document.getElementById('searchInput').addEventListener('input', (e) => {
   clearTimeout(searchDebounce);
   const term = e.target.value.trim();
+  setSearching(term);
   searchDebounce = setTimeout(() => searchItems(term), 300);
 });
 
 document.getElementById('boxPicker').addEventListener('change', updateBadge);
 document.getElementById('binGrid').addEventListener('click', e => {
   const t = e.target.closest('.bin-tile'); if (!t) return;
-  const id = parseInt(t.dataset.box, 10);
-  filterBoxId = filterBoxId === id ? null : id;
-  showingRemoved = false;
-  document.getElementById('toggleRemovedBtn').textContent = 'Removed items';
-  document.getElementById('searchInput').value = '';
-  renderBinGrid(); loadLog();
-  if (filterBoxId) document.getElementById('logTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  openBoxPage(parseInt(t.dataset.box, 10));
 });
+document.getElementById('rapidBtn').addEventListener('click', () => { setRapid(!rapid); toast(rapid ? 'Rapid mode ON — saves by itself after 3 s' : 'Rapid mode OFF'); });
+document.getElementById('undoBtn').addEventListener('click', undoLast);
+document.getElementById('clearSearchBtn').addEventListener('click', () => {
+  const i = document.getElementById('searchInput'); i.value = ''; setSearching(''); loadLog();
+});
+['boxPicker', 'itemNameInput', 'qtyInput'].forEach(id => ['focus', 'input', 'change'].forEach(ev => document.getElementById(id).addEventListener(ev, cancelCountdown)));
+// --- voice search ---
+(function () {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('micBtn');
+  if (!SR) { btn.style.display = 'none'; return; }
+  let rec = null;
+  const overlay = document.getElementById('voiceOverlay'), said = document.getElementById('voiceSaid');
+  const stop = () => { try { rec && rec.stop(); } catch (e) {} overlay.hidden = true; };
+  document.getElementById('voiceStop').addEventListener('click', stop);
+  btn.addEventListener('click', () => {
+    rec = new SR();
+    rec.lang = document.documentElement.lang === 'sk' ? 'sk-SK' : 'en-US';
+    rec.interimResults = true; rec.maxAlternatives = 1;
+    said.textContent = 'Say the item, e.g. “Where is the Sudocrem?”';
+    overlay.hidden = false;
+    rec.onresult = ev => {
+      const r = ev.results[ev.results.length - 1];
+      said.textContent = '“' + r[0].transcript + '”';
+      if (r.isFinal) {
+        const term = r[0].transcript.toLowerCase().replace(/^(where('s| is| are)?|find|look for|search( for)?|do (i|we) have)\s+(the|my|a|an|some)?\s*/i, '').replace(/[?.!]+$/, '').trim();
+        stop();
+        const i = document.getElementById('searchInput'); i.value = term; setSearching(term); searchItems(term);
+        window.scrollTo({ top: document.getElementById('logTitle').offsetTop - 10, behavior: 'smooth' });
+      }
+    };
+    rec.onerror = () => { said.textContent = 'Could not hear you. Tap the mic and try again.'; setTimeout(stop, 1500); };
+    rec.onend = () => { setTimeout(() => { overlay.hidden = true; }, 300); };
+    try { rec.start(); } catch (e) { stop(); }
+  });
+})();
 document.getElementById('householdPicker').addEventListener('change', e => setHousehold(parseInt(e.target.value, 10)));
 window.addEventListener('hashchange', () => { const h = readHousehold(); if (h !== HH) { document.getElementById('householdPicker').value = String(h); setHousehold(h); } });
+setRapid(rapid);
 loadHouseholds().then(() => loadBoxes()).then(() => { loadLog(); loadStreak(); });
 </script>
 </body>
