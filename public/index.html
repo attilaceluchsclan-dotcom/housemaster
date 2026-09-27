@@ -369,6 +369,7 @@
 <div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="undoBtn" hidden data-i18n="undo">UNDO</button></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
@@ -903,7 +904,7 @@ async function processLookupFile(file) {
     const b64 = await fileToBase64(file);
     const res = await fetch('/api/sort', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await hmAuthHeaders(),
       body: JSON.stringify({ image: b64, mediaType: file.type || 'image/jpeg', boxes: [] })
     });
     const suggestion = await res.json();
@@ -942,7 +943,7 @@ async function processBatchFile(file) {
     const b64 = await fileToBase64(file);
     const res = await fetch('/api/sort-batch', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await hmAuthHeaders(),
       body: JSON.stringify({ image: b64, mediaType: file.type || 'image/jpeg' })
     });
     if (!res.ok) throw new Error('batch sort failed');
@@ -1047,7 +1048,7 @@ async function processCapturedFile(file) {
     const eligibleBoxes = boxCache.filter(b => !b.manual_only);
     const res = await fetch('/api/sort', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await hmAuthHeaders(),
       body: JSON.stringify({
         image: b64,
         mediaType: file.type || 'image/jpeg',

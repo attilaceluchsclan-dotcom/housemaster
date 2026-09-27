@@ -96,6 +96,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/auth.js"></script>
 <script>
 const SUPABASE_URL = "https://clteinrzpebrkrkthsvx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdGVpbnJ6cGVicmtya3Roc3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODU0MTUsImV4cCI6MjEwNTM2MTQxNX0.EO4rB4sMIEwLlUlec2Ep4MB9a47vF0r_zflUOzdJX9Y";
@@ -183,7 +184,7 @@ async function compress(file, max = 1600, q = 0.8) {
 }
 async function analyze(file) {
   const b64 = await compress(file);
-  const r = await fetch('/api/match-photo', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ imageBase64: b64, householdId: HH, checkBoxId: MODE === 'check' ? state.box : null }) });
+  const r = await fetch('/api/match-photo', { method:'POST', headers: await hmAuthHeaders(), body: JSON.stringify({ imageBase64: b64, householdId: HH, checkBoxId: MODE === 'check' ? state.box : null }) });
   const j = await r.json();
   if (!r.ok) throw new Error(j.error);
   return j.items || [];
