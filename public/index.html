@@ -88,6 +88,10 @@
 <body>
 <div class="wrap">
   <h1>Housemaster — Snap & Sort</h1>
+  <div class="field" style="margin:6px 0 4px;max-width:260px;">
+    <label for="householdPicker">Household</label>
+    <select id="householdPicker"><option value="1">Household 1</option><option value="2">Household 2</option></select>
+  </div>
   <div class="streak" id="streakLine">Loading…</div>
 
   <div class="capture-card">
@@ -189,8 +193,35 @@ let selectedBinId = null, captureMode = 'single', batchDetected = [];
 let showingRemoved = false;
 let showingAll = false;
 
+// Household: #h2 in the link wins, then the last one used on this phone, then 1.
+function readHousehold() {
+  const m = location.hash.match(/^#h(\d+)$/);
+  if (m) return parseInt(m[1], 10);
+  try { const v = parseInt(localStorage.getItem('hm_household'), 10); if (v) return v; } catch (e) {}
+  return 1;
+}
+let HH = readHousehold();
+
+async function loadHouseholds() {
+  const picker = document.getElementById('householdPicker');
+  const { data } = await sb.from('households').select('id, name').order('id');
+  if (data && data.length) picker.innerHTML = data.map(h => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
+  if (![...picker.options].some(o => parseInt(o.value, 10) === HH)) HH = parseInt(picker.options[0].value, 10);
+  picker.value = String(HH);
+}
+
+function setHousehold(id) {
+  HH = id;
+  try { localStorage.setItem('hm_household', String(id)); } catch (e) {}
+  history.replaceState(null, '', '#h' + id);
+  selectedBinId = null;
+  cancelCapture(); cancelBatch();
+  document.getElementById('searchInput').value = '';
+  loadBoxes().then(() => { loadLog(); loadStreak(); renderBinChips(); });
+}
+
 async function loadBoxes() {
-  const { data } = await sb.from('boxes').select('*').order('id');
+  const { data } = await sb.from('boxes').select('*').eq('household_id', HH).order('id');
   boxCache = data || [];
   const picker = document.getElementById('boxPicker');
   const ordered = [];
@@ -252,7 +283,8 @@ async function createBin(familyId) {
     parent_box_id: family.id,
     bin_number: nextNum,
     manual_only: true,
-    is_fallback: false
+    is_fallback: false,
+    household_id: HH
   }).select();
   if (error || !data || !data[0]) { alert('Could not create bin.'); return; }
   await loadBoxes();
@@ -468,7 +500,7 @@ async function saveBatch() {
   }
 
   const { data: itemRows } = await sb.from('items').insert(
-    rows.map(r => ({ name: r.item, description: null, box_id: bin.id, status: 'confirmed', qty: r.qty }))
+    rows.map(r => ({ name: r.item, description: null, box_id: bin.id, status: 'confirmed', qty: r.qty, household_id: HH }))
   ).select();
 
   if (path && itemRows && itemRows.length) {
@@ -549,6 +581,7 @@ async function checkDuplicate(itemName) {
   const { data } = await sb.from('items')
     .select('name, created_at, box:box_id(name)')
     .ilike('name', itemName)
+    .eq('household_id', HH)
     .gt('created_at', since)
     .order('created_at', { ascending: false })
     .limit(1);
@@ -582,7 +615,8 @@ async function finalize(status) {
     description: currentSuggestion?.reason || null,
     box_id: box ? box.id : null,
     status: status,
-    qty: qty
+    qty: qty,
+    household_id: HH
   }).select();
 
   if (itemRows && itemRows[0]) {
@@ -621,6 +655,7 @@ async function loadLog() {
   let q = sb
     .from('items')
     .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(showingAll ? 500 : 15);
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
@@ -634,6 +669,7 @@ async function searchItems(term) {
     .from('items')
     .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
     .ilike('name', `%${term}%`)
+    .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(200);
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
@@ -682,7 +718,7 @@ async function deleteItem(id) {
 }
 
 async function loadStreak() {
-  const { data } = await sb.from('items').select('created_at');
+  const { data } = await sb.from('items').select('created_at').eq('household_id', HH);
   if (!data) { document.getElementById('streakLine').textContent = ''; return; }
   const days = new Set(data.map(r => new Date(r.created_at).toDateString()));
   document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
@@ -710,6 +746,7 @@ async function exportCsv() {
   const { data } = await sb
     .from('items')
     .select('name, description, status, created_at, qty, box:box_id(name, color_hex)')
+    .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(2000);
   if (!data || !data.length) return;
@@ -757,7 +794,7 @@ async function exportCsv() {
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `housemaster_export_${Date.now()}.xlsx`;
+  a.href = url; a.download = `housemaster_h${HH}_export_${Date.now()}.xlsx`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
@@ -801,7 +838,9 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
   searchDebounce = setTimeout(() => searchItems(term), 300);
 });
 
-loadBoxes().then(() => { loadLog(); loadStreak(); });
+document.getElementById('householdPicker').addEventListener('change', e => setHousehold(parseInt(e.target.value, 10)));
+window.addEventListener('hashchange', () => { const h = readHousehold(); if (h !== HH) { document.getElementById('householdPicker').value = String(h); setHousehold(h); } });
+loadHouseholds().then(() => loadBoxes()).then(() => { loadLog(); loadStreak(); });
 </script>
 </body>
 </html>
