@@ -1,5 +1,8 @@
+import { requireUser } from './_auth.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userToken = await requireUser(req, res);
+  if (!userToken) return;
 
   const { image, mediaType } = req.body || {};
   if (!image) return res.status(400).json({ error: 'missing image' });

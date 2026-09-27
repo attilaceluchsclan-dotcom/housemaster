@@ -1,6 +1,5 @@
+import { requireUser, SUPABASE_URL, SUPABASE_ANON_KEY } from './_auth.js';
 // Return item + Inventory check: match a photo against everything stored in one household.
-const SUPABASE_URL = 'https://clteinrzpebrkrkthsvx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdGVpbnJ6cGVicmtya3Roc3Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3ODU0MTUsImV4cCI6MjEwNTM2MTQxNX0.EO4rB4sMIEwLlUlec2Ep4MB9a47vF0r_zflUOzdJX9Y';
 
 const PROMPT = (list, checkBox) => `You help return household items to their storage boxes in a Slovak household.
 The photo shows one or more items spread out.
@@ -20,6 +19,8 @@ confidence: high | medium | none`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userToken = await requireUser(req, res);
+  if (!userToken) return;
   try {
     const { imageBase64, householdId, checkBoxId } = req.body || {};
     const hh = parseInt(householdId, 10);
@@ -29,7 +30,7 @@ export default async function handler(req, res) {
     let items = [];
     for (let from = 0; ; from += 1000) {
       const q = `${SUPABASE_URL}/rest/v1/all_items?select=id,source,name_en,name_sk,color,keywords,box_id,box_label_en,box_label_sk,box_emoji,box_hex,family_id&household_id=eq.${hh}&order=id&offset=${from}&limit=1000`;
-      const dr = await fetch(q, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+      const dr = await fetch(q, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${userToken}` } });
       const page = await dr.json();
       if (!dr.ok) throw new Error(page.message || 'Database error');
       items.push(...page);

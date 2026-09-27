@@ -1,3 +1,4 @@
+import { requireUser } from './_auth.js';
 const BOXES = `
 H1 = her: dresses
 H2 = her: tops, shirts, t-shirts, blouses
@@ -45,6 +46,8 @@ condition must be one of: new, used, worn out.`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  const userToken = await requireUser(req, res);
+  if (!userToken) return;
   try {
     const { imageBase64, mediaType = 'image/jpeg' } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'No image' });
