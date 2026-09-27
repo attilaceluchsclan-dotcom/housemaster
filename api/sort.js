@@ -28,13 +28,13 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 200,
+        max_tokens: 300,
         messages: [{
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `You are sorting a household item into exactly one of these storage boxes. Each box lists example items it holds — use those to judge fit, don't go by the box name alone.\n\n${boxListText}\n\nImportant: sort by what the item IS (electrical vs. not), never by whether it gets physically installed into a wall or fixture. Wall outlets/sockets, switches, switch plates, junction boxes, light fixtures, and any other electrical or powered part still belong in the electrical/electronics box even though they mount into a wall like a plumbing or hardware part would -- "it gets installed into a wall" is not a reason to file something as plumbing/DIY.\n\nLook at the photo and identify the item, then pick the single best-matching box. If nothing fits well, use "${fallbackBox}". Respond ONLY with raw JSON, no markdown fences: {"item": "<short specific item name>", "box": "<one of the box names exactly as listed>", "reason": "<one short sentence citing what the item is and why that box>"}`
+              text: `You are sorting a household item into exactly one of these storage boxes. Each box lists example items it holds — use those to judge fit, don't go by the box name alone.\n\n${boxListText}\n\nImportant: sort by what the item IS (electrical vs. not), never by whether it gets physically installed into a wall or fixture. Wall outlets/sockets, switches, switch plates, junction boxes, light fixtures, and any other electrical or powered part still belong in the electrical/electronics box even though they mount into a wall like a plumbing or hardware part would -- "it gets installed into a wall" is not a reason to file something as plumbing/DIY.\n\nLook at the photo and identify the item, then pick the single best-matching box. If nothing fits well, use "${fallbackBox}". This is a Slovak household. Respond ONLY with raw JSON, no markdown fences: {"item": "<short specific item name in English>", "item_sk": "<the same item name in natural Slovak, as a Slovak shopper would call it>", "box": "<one of the box names exactly as listed>", "reason": "<one short sentence citing what the item is and why that box>"}`
             },
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } }
           ]
@@ -49,6 +49,6 @@ export default async function handler(req, res) {
     if (!boxNames.includes(parsed.box)) parsed.box = fallbackBox;
     return res.status(200).json(parsed);
   } catch (err) {
-    return res.status(200).json({ item: '', box: fallbackBox, reason: 'Sorting failed server-side.' });
+    return res.status(200).json({ item: '', item_sk: '', box: fallbackBox, reason: 'Sorting failed server-side.' });
   }
 }

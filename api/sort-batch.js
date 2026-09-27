@@ -20,7 +20,7 @@ export default async function handler(req, res) {
           content: [
             {
               type: 'text',
-              text: `This photo shows a batch of household items that have already been pulled out to go into one specific storage bin together. Identify EVERY distinct item visible in the photo, separately — do not merge different items into one entry, and do not describe the whole group as a single thing.\n\nFor each distinct item, give a short specific name (e.g. "Phillips screwdriver, medium", not just "tool"). If several identical copies of the exact same item are visible together, you may combine them into one entry with a qty greater than 1 — but different items must always be separate entries.\n\nRespond ONLY with raw JSON, no markdown fences, no commentary: {"items": [{"item": "<short specific item name>", "qty": <integer count>}, ...]}\n\nIf you cannot make out any distinct items, respond with {"items": []}.`
+              text: `This photo shows a batch of household items that have already been pulled out to go into one specific storage bin together. Identify EVERY distinct item visible in the photo, separately — do not merge different items into one entry, and do not describe the whole group as a single thing.\n\nFor each distinct item, give a short specific name (e.g. "Phillips screwdriver, medium", not just "tool"). If several identical copies of the exact same item are visible together, you may combine them into one entry with a qty greater than 1 — but different items must always be separate entries.\n\nThis is a Slovak household. Respond ONLY with raw JSON, no markdown fences, no commentary: {"items": [{"item": "<short specific item name in English>", "item_sk": "<the same name in natural Slovak>", "qty": <integer count>}, ...]}\n\nIf you cannot make out any distinct items, respond with {"items": []}.`
             },
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } }
           ]
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const parsed = JSON.parse(clean);
     const items = Array.isArray(parsed.items) ? parsed.items
       .filter(it => it && typeof it.item === 'string' && it.item.trim())
-      .map(it => ({ item: it.item.trim(), qty: Number.isFinite(it.qty) && it.qty > 0 ? Math.round(it.qty) : 1 }))
+      .map(it => ({ item: it.item.trim(), item_sk: typeof it.item_sk === 'string' ? it.item_sk.trim() : '', qty: Number.isFinite(it.qty) && it.qty > 0 ? Math.round(it.qty) : 1 }))
       : [];
     return res.status(200).json({ items });
   } catch (err) {
