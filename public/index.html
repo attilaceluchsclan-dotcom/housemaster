@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -172,44 +172,61 @@
   .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(200px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:10px 12px 10px 16px; border-radius:12px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); display:none; align-items:center; gap:12px; }
   .toast.show { display:flex; }
   #undoBtn { border:none; background:#ffc53d; color:#1b1400; font:700 .85rem var(--mono); border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .brand { border:none; background:none; color:var(--ink); padding:0; cursor:pointer; }
+  .top-r { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .top-r .rapid { margin-left:0; }
+  .lang { display:flex; border:1px solid var(--line); border-radius:99px; overflow:hidden; }
+  .lang button { border:none; background:var(--card); color:var(--sub); font:700 .8rem var(--mono); padding:5px 11px; cursor:pointer; }
+  .lang button[aria-pressed="true"] { background:var(--accent); color:var(--accent-ink); }
+  .alt { display:block; font-size:.78rem; color:var(--sub); font-weight:400; }
+  .dock { z-index:1300; }
+  .boxpage { padding-bottom:230px; }
+  .bp-item .alt { color:#ddd; font-size:.7rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <span class="brand">HOUSEMASTER</span>
+    <button type="button" class="brand" id="brandBtn">HOUSEMASTER</button>
     <select id="householdPicker" aria-label="Household"><option value="1">Household 1</option><option value="2">Household 2</option></select>
-    <button type="button" id="rapidBtn" class="rapid" aria-pressed="false" title="Rapid mode: saves by itself after 3 seconds">⚡ Rapid</button>
+    <div class="top-r">
+      <button type="button" id="rapidBtn" class="rapid" aria-pressed="false">⚡ <span data-i18n="rapid">Rapid</span></button>
+      <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="sk">SK</button><button type="button" data-lang="en">EN</button></div>
+    </div>
   </header>
   <div class="streak" id="streakLine">Loading…</div>
   <span id="hhTitle" hidden></span>
   <div class="result-card" id="resultCard">
     <img class="result-photo" id="resultPhoto" alt="captured item">
-    <div id="loadingLine" class="loading" style="display:none;">Sorting…</div>
-    <div id="countdown" class="countdown" hidden><span class="ring"><b id="cdNum">3</b></span><span>Saving by itself… tap anything to stop</span></div>
+    <div id="loadingLine" class="loading" style="display:none;" data-i18n="sorting">Sorting…</div>
+    <div id="countdown" class="countdown" hidden><span class="ring"><b id="cdNum">3</b></span><span data-i18n="cd">Saving by itself… tap anything to stop</span></div>
     <div id="resultBody" style="display:none;">
       <div id="catBadge" class="cat-badge"></div>
       <div id="dupWarning" class="dup-warning" style="display:none;"></div>
       <div class="field">
-        <label for="itemNameInput">Item name</label>
-        <input type="text" id="itemNameInput" placeholder="Item name">
+        <label for="itemNameSkInput" data-i18n="nameSk">Name (Slovak)</label>
+        <input type="text" id="itemNameSkInput">
+      </div>
+      <div class="field">
+        <label for="itemNameInput" data-i18n="nameEn">Name (English)</label>
+        <input type="text" id="itemNameInput">
       </div>
       <div class="row2">
         <div class="field">
-          <label for="boxPicker">Box</label>
+          <label for="boxPicker" data-i18n="box">Box</label>
           <select id="boxPicker"></select>
         </div>
         <div class="field" style="max-width:90px;">
-          <label for="qtyInput">Qty</label>
+          <label for="qtyInput" data-i18n="qty">Qty</label>
           <input type="number" id="qtyInput" min="1" value="1">
         </div>
       </div>
       <div class="reasoning" id="reasoning"></div>
       <div class="btn-row">
-        <button class="action-btn confirm" id="confirmBtn">✓ Confirm</button>
-        <button class="action-btn misc" id="miscBtn">General</button>
-        <button class="action-btn later" id="laterBtn">Check later</button>
-        <button class="action-btn cancel" id="cancelBtn">Cancel</button>
+        <button class="action-btn confirm" id="confirmBtn" data-i18n="confirm">✓ Confirm</button>
+        <button class="action-btn misc" id="miscBtn" data-i18n="misc">General</button>
+        <button class="action-btn later" id="laterBtn" data-i18n="later">Check later</button>
+        <button class="action-btn cancel" id="cancelBtn" data-i18n="cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -217,8 +234,8 @@
     <div class="hint" id="batchTargetLabel" style="margin-bottom:10px;"></div>
     <div id="batchRows"></div>
     <div class="btn-row" style="margin-top:10px;">
-      <button class="action-btn confirm" id="batchSaveBtn">✓ Save all to this bin</button>
-      <button class="action-btn cancel" id="batchCancelBtn">Cancel</button>
+      <button class="action-btn confirm" id="batchSaveBtn" data-i18n="saveAll">✓ Save all to this section</button>
+      <button class="action-btn cancel" id="batchCancelBtn" data-i18n="cancel">Cancel</button>
     </div>
   </div>
 
@@ -236,21 +253,21 @@
 
 
   <section class="storage" id="storageSec">
-    <h2 class="sec-h">STORAGE <small>tap a box to open it</small></h2>
+    <h2 class="sec-h"><span data-i18n="storage">STORAGE</span> <small data-i18n="tapBox">tap a box to open it</small></h2>
     <div class="bin-grid" id="binGrid"></div>
   <div class="split-card">
-    <button class="link-btn" id="splitToggleBtn">🗂 Split a box into sections</button>
+    <button class="link-btn" id="splitToggleBtn" data-i18n="split">🗂 Split a box into sections</button>
     <div id="splitPanel" style="display:none;margin-top:10px;">
       <div class="field">
-        <label for="familyPicker">Box to split</label>
+        <label for="familyPicker" data-i18n="boxToSplit">Box to split</label>
         <select id="familyPicker"></select>
       </div>
       <div class="field">
-        <label>Sections in this box (up to 5)</label>
+        <label data-i18n="sections">Sections in this box (up to 5)</label>
         <div class="bin-chips" id="binChips"></div>
       </div>
       <div class="btn-row" style="margin-top:10px;">
-        <button class="action-btn confirm" id="binPhotoBtn" disabled>📷 Photo this section's items</button>
+        <button class="action-btn confirm" id="binPhotoBtn" disabled data-i18n="photoSection">📷 Photo this section's items</button>
       </div>
       <div class="hint" id="binHint" style="margin-top:6px;"></div>
     </div>
@@ -262,37 +279,37 @@
       <span class="actions">
         <button class="link-btn" id="toggleAllBtn">Show all</button>
         <button class="link-btn" id="toggleRemovedBtn">Removed items</button>
-        <button class="link-btn" id="exportBtn">Export (color)</button>
+        <button class="link-btn" id="exportBtn" data-i18n="export">Export (color)</button>
       </span>
     </h2>
-    <div id="logList"><div class="empty">No items sorted yet.</div></div>
+    <div id="logList"><div class="empty" data-i18n="noItems">No items sorted yet.</div></div>
   </div>
 </div>
 <div class="dock" id="dock">
-  <div class="find-lbl">FIND THE ITEM</div>
+  <div class="find-lbl" data-i18n="find">FIND THE ITEM</div>
   <div class="find-row">
     <div class="find-input">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
-      <input type="search" id="searchInput" placeholder="Type item name" autocomplete="off" enterkeyhint="search">
+      <input type="search" id="searchInput" data-i18n-ph="typeName" placeholder="Type item name" autocomplete="off" enterkeyhint="search">
       <button type="button" class="clear-btn" id="clearSearchBtn" aria-label="Clear search">✕</button>
     </div>
     <button type="button" class="sq mic" id="micBtn" aria-label="Search by voice"><svg viewBox="0 0 24 24" width="24" height="24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></button>
     <button type="button" class="sq" id="lookupPhotoBtn" aria-label="Find by photo">📷</button>
   </div>
-  <button class="sort-btn" id="snapBtn" type="button">📷 SORT NEW ITEM</button>
+  <button class="sort-btn" id="snapBtn" type="button"><span id="snapLbl">📷 SORT NEW ITEM</span></button>
   <input type="file" id="fileInput" accept="image/*" capture="environment">
 </div>
 <div class="voice" id="voiceOverlay" hidden>
   <div class="orb"><svg viewBox="0 0 24 24" width="64" height="64"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div>
-  <div class="v-h">LISTENING…</div>
+  <div class="v-h" data-i18n="listening">LISTENING…</div>
   <div class="v-said" id="voiceSaid">Say the item, e.g. “Where is the Sudocrem?”</div>
-  <button type="button" class="v-stop" id="voiceStop">Stop</button>
+  <button type="button" class="v-stop" id="voiceStop" data-i18n="stop">Stop</button>
 </div>
 <div class="boxpage" id="boxPage" hidden>
   <div class="bp-head" id="bpHead"></div>
   <div class="bp-grid" id="bpGrid"></div>
 </div>
-<div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="undoBtn" hidden>UNDO</button></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="undoBtn" hidden data-i18n="undo">UNDO</button></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -316,6 +333,42 @@ function readHousehold() {
 let HH = readHousehold();
 let filterBoxId = null;
 let binCounts = {};
+// ---------- language ----------
+const T = {
+  sk: { rapid:'Rýchlo', sorting:'Triedim…', cd:'Uloží sa samo… ťukni kamkoľvek pre zastavenie', nameSk:'Názov (slovensky)', nameEn:'Názov (anglicky)', box:'Box', qty:'Ks', confirm:'✓ Potvrdiť', misc:'Rôzne', later:'Skontrolovať neskôr', cancel:'Zrušiť', saveAll:'✓ Uložiť všetko do tejto sekcie', storage:'SKLAD', tapBox:'ťukni na box pre otvorenie', split:'🗂 Rozdeliť box na sekcie', boxToSplit:'Box na rozdelenie', sections:'Sekcie v tomto boxe (max. 5)', photoSection:'📷 Odfotiť veci tejto sekcie', export:'Export (farebný)', noItems:'Zatiaľ žiadne veci.', find:'NÁJDI VEC', typeName:'Napíš názov veci', listening:'POČÚVAM…', stop:'Stop', undo:'SPÄŤ', sortNew:'ROZTRIEDIŤ NOVÚ VEC', home:'⌂ SPÄŤ NA ÚVOD',
+        recent:'Posledné', removedT:'Odstránené', results:'Výsledky', showAll:'Zobraziť všetko', showRecent:'Len posledné', removedItems:'Odstránené veci', backActive:'Späť na aktívne', noRemoved:'Žiadne odstránené veci.', noFound:'Nič sa nenašlo.', removedAt:'Odstránené', loading:'Načítavam…',
+        streak:(n,d)=>`${n} roztriedených vecí · ${d} ${d===1?'aktívny deň':(d<5?'aktívne dni':'aktívnych dní')}`, savedTo:(b,l)=>`Uložené do: ${b}${l?' (skontrolovať neskôr)':''}`, savedN:(n,b)=>`Uložené ${n} ks do: ${b}`, undone:'Vrátené späť', rapidOn:'Rýchly režim ZAP — uloží sa samo po 3 s', rapidOff:'Rýchly režim VYP',
+        sortFail:'Triedenie zlyhalo — zaradené do Rôzne, uprav ak treba.', dup:(n,m,b)=>`⚠ Možný duplikát — „${n}“ bolo zapísané pred ${m} min v: ${b}.`, sortingInto:b=>`Triedim do: ${b}`, detecting:'rozpoznávam veci…', maxSec:'Maximum 5 sekcií v tomto boxe.', noBin:'Sekciu sa nepodarilo vytvoriť.', delQ:'Natrvalo vymazať túto vec? Nedá sa to vrátiť — ak sa môže vrátiť, použi radšej „odstrániť“.',
+        sayItem:'Povedz vec, napr. „Kde je Sudocrem?“', noHear:'Nepočul som. Ťukni na mikrofón a skús znova.', back:'← Späť', items:n=>`${n} ${n===1?'vec':(n>1&&n<5?'veci':'vecí')}`, full:(p,c)=>`asi ${p}% plný (z ~${c})`, emptyBox:'V tomto boxe zatiaľ nič nie je.', unsorted:'Nezaradené', status:{confirmed:'potvrdené',misc:'rôzne',later:'neskôr'}, hh:n=>`Domácnosť ${n}`, save:'Uložiť', photoFind:'Hľadám…' },
+  en: { rapid:'Rapid', sorting:'Sorting…', cd:'Saving by itself… tap anything to stop', nameSk:'Name (Slovak)', nameEn:'Name (English)', box:'Box', qty:'Qty', confirm:'✓ Confirm', misc:'General', later:'Check later', cancel:'Cancel', saveAll:'✓ Save all to this section', storage:'STORAGE', tapBox:'tap a box to open it', split:'🗂 Split a box into sections', boxToSplit:'Box to split', sections:'Sections in this box (up to 5)', photoSection:"📷 Photo this section's items", export:'Export (color)', noItems:'No items sorted yet.', find:'FIND THE ITEM', typeName:'Type item name', listening:'LISTENING…', stop:'Stop', undo:'UNDO', sortNew:'SORT NEW ITEM', home:'⌂ BACK TO HOME',
+        recent:'Recent', removedT:'Removed', results:'Results', showAll:'Show all', showRecent:'Show recent', removedItems:'Removed items', backActive:'Back to active', noRemoved:'No removed items.', noFound:'No items found.', removedAt:'Removed', loading:'Loading…',
+        streak:(n,d)=>`${n} items sorted · ${d} active day${d===1?'':'s'}`, savedTo:(b,l)=>`Saved to ${b}${l?' (check later)':''}`, savedN:(n,b)=>`Saved ${n} item${n===1?'':'s'} to ${b}`, undone:'Undone', rapidOn:'Rapid mode ON — saves by itself after 3 s', rapidOff:'Rapid mode OFF',
+        sortFail:'Sorting failed — filed as General, edit if needed.', dup:(n,m,b)=>`⚠ Possible duplicate — "${n}" was logged ${m} min ago in ${b}.`, sortingInto:b=>`Sorting into: ${b}`, detecting:'detecting items…', maxSec:'Maximum of 5 sections reached for this box.', noBin:'Could not create section.', delQ:'Permanently delete this item? This cannot be undone — use "remove" instead if it might come back.',
+        sayItem:'Say the item, e.g. “Where is the Sudocrem?”', noHear:'Could not hear you. Tap the mic and try again.', back:'← Back', items:n=>`${n} item${n===1?'':'s'}`, full:(p,c)=>`about ${p}% full (of ~${c})`, emptyBox:'Nothing in this box yet.', unsorted:'Unsorted', status:{confirmed:'confirmed',misc:'misc',later:'later'}, hh:n=>`Household ${n}`, save:'Save', photoFind:'Identifying…' }
+};
+let LANG = 'sk';
+try { LANG = localStorage.getItem('hm_lang') || 'sk'; } catch (e) {}
+function t(k) { return (T[LANG] && T[LANG][k] !== undefined) ? T[LANG][k] : T.en[k]; }
+// item / box names: main language first, other language second
+function INAME(it) { const sk = it && it.name_sk, en = it && it.name; return LANG === 'sk' ? (sk || en || '') : (en || sk || ''); }
+function IALT(it) { const sk = it && it.name_sk, en = it && it.name; const a = LANG === 'sk' ? en : sk; return a && a !== INAME(it) ? a : ''; }
+function BN(b) { if (!b) return ''; return LANG === 'sk' ? (b.name_sk || b.name) : (b.name || b.name_sk); }
+function BALT(b) { if (!b) return ''; const a = LANG === 'sk' ? b.name : b.name_sk; return a && a !== BN(b) ? a : ''; }
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
+  document.getElementById('toggleAllBtn').textContent = showingAll ? t('showRecent') : t('showAll');
+  document.getElementById('toggleRemovedBtn').textContent = showingRemoved ? t('backActive') : t('removedItems');
+  document.querySelectorAll('#householdPicker option').forEach(o => { o.textContent = t('hh')(o.value); });
+  updateSnapLabel();
+}
+function setLang(l) {
+  LANG = l; try { localStorage.setItem('hm_lang', l); } catch (e) {}
+  applyLang();
+  if (boxCache.length) { loadBoxes().then(() => { const term = document.getElementById('searchInput').value.trim(); term ? searchItems(term) : loadLog(); loadStreak(); }); }
+}
 const BOX_CAPACITY = 30; // rough "full" level for the fullness bar
 function shortCode(b) {
   const w = (b.name || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/);
@@ -372,7 +425,7 @@ async function undoLast() {
   await sb.from('item_photos').delete().in('item_id', ids);
   await sb.from('items').delete().in('id', ids);
   if (path) { try { await sb.storage.from('item-photos').remove([path]); } catch (e) {} }
-  toast('Undone');
+  toast(t('undone'));
   loadLog(); loadStreak();
 }
 
@@ -385,27 +438,50 @@ async function openBoxPage(familyId) {
   const code = fam.emoji && /^[A-Z]{3}$/.test(fam.emoji) ? fam.emoji : shortCode(fam);
   const head = document.getElementById('bpHead');
   head.style.background = swatchBg(fam); head.style.color = fg;
-  head.innerHTML = `<button type="button" class="bp-back" id="bpBack">← Back</button>
-    <div class="bp-code">${escapeHtml(code)}</div><div class="bp-name">${escapeHtml(fam.name)}</div>
-    <div class="bp-stats">${n} item${n === 1 ? '' : 's'} · about ${pct}% full (of ~${BOX_CAPACITY})</div>
+  head.innerHTML = `<button type="button" class="bp-back" id="bpBack">${t('back')}</button>
+    <div class="bp-code">${escapeHtml(code)}</div><div class="bp-name">${escapeHtml(BN(fam))}</div>${BALT(fam) ? `<div style="opacity:.85">${escapeHtml(BALT(fam))}</div>` : ''}
+    <div class="bp-stats">${t('items')(n)} · ${t('full')(pct, BOX_CAPACITY)}</div>
     <div class="bp-full"><i style="width:${pct}%"></i></div>`;
   document.getElementById('bpBack').onclick = closeBoxPage;
   const grid = document.getElementById('bpGrid');
-  grid.innerHTML = '<div class="bp-empty">Loading…</div>';
+  grid.innerHTML = `<div class="bp-empty">${t('loading')}</div>`;
   document.getElementById('boxPage').hidden = false;
+  updateSnapLabel();
   document.getElementById('boxPage').scrollTop = 0;
-  history.pushState({ boxPage: familyId }, '');
-  const { data } = await sb.from('items').select('id, name, qty, item_photos(image_path)').in('box_id', ids).eq('household_id', HH).is('removed_at', null).order('created_at', { ascending: false }).limit(500);
+  const { data } = await sb.from('items').select('id, name, name_sk, qty, item_photos(image_path)').in('box_id', ids).eq('household_id', HH).is('removed_at', null).order('created_at', { ascending: false }).limit(500);
   grid.innerHTML = (data && data.length) ? data.map(it => {
     const ph = it.item_photos && it.item_photos[0] ? `background-image:url('${photoUrl(it.item_photos[0].image_path)}')` : '';
-    return `<div class="bp-item" style="${ph}">${it.qty > 1 ? `<b class="q">×${it.qty}</b>` : ''}<span>${escapeHtml(it.name || '')}</span></div>`;
-  }).join('') : '<div class="bp-empty">Nothing in this box yet.</div>';
+    return `<div class="bp-item" style="${ph}">${it.qty > 1 ? `<b class="q">×${it.qty}</b>` : ''}<span>${escapeHtml(INAME(it))}${IALT(it) ? `<i class="alt">${escapeHtml(IALT(it))}</i>` : ''}</span></div>`;
+  }).join('') : `<div class="bp-empty">${t('emptyBox')}</div>`;
 }
 function closeBoxPage() {
-  const bp = document.getElementById('boxPage');
-  if (!bp.hidden) { bp.hidden = true; if (history.state && history.state.boxPage) history.back(); }
+  document.getElementById('boxPage').hidden = true;
+  updateSnapLabel();
 }
-window.addEventListener('popstate', () => { document.getElementById('boxPage').hidden = true; });
+function onSubPage() {
+  return !document.getElementById('boxPage').hidden || document.body.classList.contains('searching');
+}
+function updateSnapLabel() {
+  const l = document.getElementById('snapLbl'); if (l) l.textContent = onSubPage() ? t('home') : '📷 ' + t('sortNew');
+}
+// Big button + logo always bring you back to the main page; phone Back never leaves the app.
+function goHome() {
+  document.getElementById('boxPage').hidden = true;
+  document.getElementById('voiceOverlay').hidden = true;
+  const si = document.getElementById('searchInput');
+  if (si.value) { si.value = ''; setSearching(''); showingRemoved = false; loadLog(); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateSnapLabel();
+}
+function backGuard() { try { history.pushState({ hm: 'guard' }, ''); } catch (e) {} }
+window.addEventListener('popstate', () => {
+  if (document.getElementById('cameraOverlay').classList.contains('show')) closeCamera();
+  else if (!document.getElementById('voiceOverlay').hidden) document.getElementById('voiceOverlay').hidden = true;
+  else if (onSubPage()) goHome();
+  else if (document.getElementById('resultCard').classList.contains('show')) cancelCapture();
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+  backGuard();
+});
 
 function familyOf(boxId) {
   const b = boxCache.find(x => x.id === boxId);
@@ -426,9 +502,9 @@ function renderBinGrid() {
   grid.innerHTML = familyBoxes().map(b => {
     const n = binCounts[b.id] || 0;
     const code = b.emoji && /^[A-Z]{3}$/.test(b.emoji) ? b.emoji : shortCode(b);
-    return `<button type="button" class="bin-tile" data-box="${b.id}" style="background:${swatchBg(b)};color:${textColorFor(b.color_hex || '#999999')}" aria-label="${escapeHtml(b.name)}, ${n} items">
+    return `<button type="button" class="bin-tile" data-box="${b.id}" style="background:${swatchBg(b)};color:${textColorFor(b.color_hex || '#999999')}" aria-label="${escapeHtml(BN(b))}, ${n}">
       <span class="cd">${escapeHtml(code)}</span><span class="ct">${n}</span>
-      <span class="nm">${escapeHtml(b.name)}</span>
+      <span class="nm">${escapeHtml(BN(b))}</span>
       <span class="bar"><i style="width:${Math.min(100, Math.round(n / BOX_CAPACITY * 100))}%"></i></span></button>`;
   }).join('');
 }
@@ -453,14 +529,14 @@ function updateBadge() {
   const fam = boxCache.find(x => x.id === familyOf(b.id)) || b;
   badge.style.background = swatchBg(fam);
   badge.style.color = textColorFor(fam.color_hex || '#999999');
-  badge.innerHTML = `<span>→ ${escapeHtml(b.name)}</span>${fam.emoji && /^[A-Z]{3}$/.test(fam.emoji) ? `<span class="code">${fam.emoji}</span>` : ''}`;
+  badge.innerHTML = `<span>→ ${escapeHtml(BN(b))}${BALT(b) ? `<small style="display:block;font:500 .8rem var(--body);text-transform:none;opacity:.85">${escapeHtml(BALT(b))}</small>` : ''}</span>${fam.emoji && /^[A-Z]{3}$/.test(fam.emoji) ? `<span class="code">${fam.emoji}</span>` : ''}`;
   badge.classList.add('show');
 }
 
 async function loadHouseholds() {
   const picker = document.getElementById('householdPicker');
   const { data } = await sb.from('households').select('id, name').order('id');
-  if (data && data.length) picker.innerHTML = data.map(h => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
+  if (data && data.length) picker.innerHTML = data.map(h => `<option value="${h.id}">${escapeHtml(t('hh')(h.id))}</option>`).join('');
   if (![...picker.options].some(o => parseInt(o.value, 10) === HH)) HH = parseInt(picker.options[0].value, 10);
   picker.value = String(HH);
   setTitle();
@@ -489,7 +565,7 @@ async function loadBoxes() {
     ordered.push(family);
     boxCache.filter(b => b.parent_box_id === family.id).sort((a, b) => (a.bin_number || 0) - (b.bin_number || 0)).forEach(bin => ordered.push(bin));
   });
-  picker.innerHTML = ordered.map(b => `<option value="${b.id}">${b.parent_box_id ? '↳ ' : (b.emoji ? b.emoji + ' ' : '')}${b.name}</option>`).join('');
+  picker.innerHTML = ordered.map(b => `<option value="${b.id}">${b.parent_box_id ? '↳ ' : (b.emoji ? b.emoji + ' ' : '')}${escapeHtml(BN(b))}</option>`).join('');
   renderFamilyPicker();
   renderBinGrid();
 }
@@ -505,7 +581,7 @@ function binsFor(familyId) {
 function renderFamilyPicker() {
   const picker = document.getElementById('familyPicker');
   const prevValue = picker.value;
-  picker.innerHTML = familyBoxes().map(b => `<option value="${b.id}">${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  picker.innerHTML = familyBoxes().map(b => `<option value="${b.id}">${b.emoji ? b.emoji + ' ' : ''}${escapeHtml(BN(b))}</option>`).join('');
   if (prevValue && familyBoxes().some(b => String(b.id) === prevValue)) picker.value = prevValue;
   renderBinChips();
 }
@@ -528,7 +604,7 @@ function renderBinChips() {
   if (addBtn && canAdd) addBtn.addEventListener('click', () => createBin(familyId));
   photoBtn.disabled = !selectedBinId || !bins.some(b => b.id === selectedBinId);
   if (!bins.some(b => b.id === selectedBinId)) selectedBinId = null;
-  hint.textContent = bins.length >= 5 ? 'Maximum of 5 bins reached for this box.' : '';
+  hint.textContent = bins.length >= 5 ? t('maxSec') : '';
 }
 
 async function createBin(familyId) {
@@ -547,7 +623,7 @@ async function createBin(familyId) {
     is_fallback: false,
     household_id: HH
   }).select();
-  if (error || !data || !data[0]) { alert('Could not create bin.'); return; }
+  if (error || !data || !data[0]) { alert(t('noBin')); return; }
   await loadBoxes();
   document.getElementById('familyPicker').value = String(familyId);
   selectedBinId = data[0].id;
@@ -667,7 +743,7 @@ function openLookupCamera() {
 
 async function processLookupFile(file) {
   const searchInput = document.getElementById('searchInput');
-  searchInput.value = 'Identifying…';
+  searchInput.value = t('photoFind');
   try {
     const b64 = await fileToBase64(file);
     const res = await fetch('/api/sort', {
@@ -676,11 +752,11 @@ async function processLookupFile(file) {
       body: JSON.stringify({ image: b64, mediaType: file.type || 'image/jpeg', boxes: [] })
     });
     const suggestion = await res.json();
-    const term = suggestion.item || '';
+    const term = (LANG === 'sk' ? (suggestion.item_sk || suggestion.item) : (suggestion.item || suggestion.item_sk)) || '';
     searchInput.value = term;
     setSearching(term);
     showingRemoved = false;
-    document.getElementById('toggleRemovedBtn').textContent = 'Removed items';
+    document.getElementById('toggleRemovedBtn').textContent = t('removedItems');
     searchItems(term);
   } catch (err) {
     searchInput.value = '';
@@ -701,7 +777,7 @@ async function processBatchFile(file) {
   const batchCard = document.getElementById('batchCard');
   const batchRows = document.getElementById('batchRows');
   const targetLabel = document.getElementById('batchTargetLabel');
-  targetLabel.textContent = `Sorting into: ${bin.name} — detecting items…`;
+  targetLabel.textContent = `${t('sortingInto')(BN(bin))} — ${t('detecting')}`;
   batchRows.innerHTML = '';
   batchCard.classList.add('show');
   batchDetected = [];
@@ -721,7 +797,7 @@ async function processBatchFile(file) {
     batchDetected = [];
   }
   if (!batchDetected.length) batchDetected = [{ item: '', qty: 1 }];
-  targetLabel.textContent = `Sorting into: ${bin.name}`;
+  targetLabel.textContent = t('sortingInto')(BN(bin));
   renderBatchReview();
 }
 
@@ -729,7 +805,7 @@ function renderBatchReview() {
   const batchRows = document.getElementById('batchRows');
   batchRows.innerHTML = batchDetected.map((it, i) => `
     <div class="batch-row" data-idx="${i}">
-      <input type="text" value="${(it.item || '').replace(/"/g, '&quot;')}" placeholder="Item name" data-field="item">
+      <input type="text" value="${((LANG === 'sk' ? (it.item_sk || it.item) : (it.item || it.item_sk)) || '').replace(/"/g, '&quot;')}" data-field="item" data-sk="${(it.item_sk || '').replace(/"/g, '&quot;')}" data-en="${(it.item || '').replace(/"/g, '&quot;')}">
       <input type="number" min="1" value="${it.qty || 1}" data-field="qty">
       <button class="icon-btn" data-remove="${i}" title="Remove">🗑</button>
     </div>
@@ -745,6 +821,8 @@ function readBatchRows() {
   const rows = document.querySelectorAll('#batchRows .batch-row');
   return Array.from(rows).map(row => ({
     item: row.querySelector('[data-field="item"]').value.trim(),
+    sk: row.querySelector('[data-field="item"]').dataset.sk || '',
+    en: row.querySelector('[data-field="item"]').dataset.en || '',
     qty: parseInt(row.querySelector('[data-field="qty"]').value, 10) || 1
   })).filter(r => r.item);
 }
@@ -762,7 +840,7 @@ async function saveBatch() {
   }
 
   const { data: itemRows } = await sb.from('items').insert(
-    rows.map(r => ({ name: r.item, description: null, box_id: bin.id, status: 'confirmed', qty: r.qty, household_id: HH }))
+    rows.map(r => ({ name: LANG === 'sk' ? (r.en || r.item) : r.item, name_sk: LANG === 'sk' ? r.item : (r.sk || null), description: null, box_id: bin.id, status: 'confirmed', qty: r.qty, household_id: HH }))
   ).select();
 
   if (path && itemRows && itemRows.length) {
@@ -772,7 +850,7 @@ async function saveBatch() {
   ding();
 
   cancelBatch();
-  toast(`Saved ${rows.length} item${rows.length === 1 ? '' : 's'} to ${bin.name}`, !!lastSaved);
+  toast(t('savedN')(rows.length, BN(bin)), !!lastSaved);
   loadLog();
   await loadStreak();
   flashBin(bin.id);
@@ -803,7 +881,7 @@ async function processCapturedFile(file) {
   resultPhoto.src = currentPhotoUrl;
   resultCard.classList.add('show');
   loadingLine.style.display = 'block';
-  loadingLine.textContent = 'Sorting…';
+  loadingLine.textContent = t('sorting');
   resultBody.style.display = 'none';
   dupWarning.style.display = 'none';
   document.getElementById('catBadge').classList.remove('show');
@@ -825,11 +903,12 @@ async function processCapturedFile(file) {
     const suggestion = await res.json();
     currentSuggestion = suggestion;
     document.getElementById('itemNameInput').value = suggestion.item || '';
+    document.getElementById('itemNameSkInput').value = suggestion.item_sk || '';
     const matched = eligibleBoxes.find(b => b.name === suggestion.box);
     document.getElementById('boxPicker').value = matched ? matched.id : fallbackBoxId();
     document.getElementById('reasoning').textContent = suggestion.reason || '';
     updateBadge();
-    await checkDuplicate(suggestion.item);
+    await checkDuplicate(suggestion.item || suggestion.item_sk);
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
     resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -837,8 +916,9 @@ async function processCapturedFile(file) {
   } catch (err) {
     currentSuggestion = { box: fallbackBoxName(), reason: '' };
     document.getElementById('itemNameInput').value = '';
+    document.getElementById('itemNameSkInput').value = '';
     document.getElementById('boxPicker').value = fallbackBoxId();
-    document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
+    document.getElementById('reasoning').textContent = t('sortFail');
     updateBadge();
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
@@ -850,15 +930,15 @@ async function checkDuplicate(itemName) {
   if (!itemName) { dupWarning.style.display = 'none'; return; }
   const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { data } = await sb.from('items')
-    .select('name, created_at, box:box_id(name)')
-    .ilike('name', itemName)
+    .select('name, name_sk, created_at, box:box_id(name, name_sk)')
+    .or(`name.ilike.${itemName.replace(/[,()%*]/g, ' ')},name_sk.ilike.${itemName.replace(/[,()%*]/g, ' ')}`)
     .eq('household_id', HH)
     .gt('created_at', since)
     .order('created_at', { ascending: false })
     .limit(1);
   if (data && data[0]) {
     const mins = Math.round((Date.now() - new Date(data[0].created_at).getTime()) / 60000);
-    dupWarning.textContent = `⚠ Possible duplicate — "${data[0].name}" was logged ${mins} min ago in ${data[0].box ? data[0].box.name : 'a box'}.`;
+    dupWarning.textContent = t('dup')(INAME(data[0]), mins, data[0].box ? BN(data[0].box) : '—');
     dupWarning.style.display = 'block';
   } else {
     dupWarning.style.display = 'none';
@@ -876,7 +956,8 @@ async function finalize(status) {
   if (!currentFile) return;
   const boxId = status === 'misc' ? fallbackBoxId() : (parseInt(document.getElementById('boxPicker').value, 10) || fallbackBoxId());
   const box = boxCache.find(b => b.id === boxId) || boxCache.find(b => b.id === fallbackBoxId());
-  const itemName = document.getElementById('itemNameInput').value.trim() || currentSuggestion?.item || (box ? box.name : 'Item');
+  const itemNameSk = document.getElementById('itemNameSkInput').value.trim() || currentSuggestion?.item_sk || '';
+  const itemName = document.getElementById('itemNameInput').value.trim() || currentSuggestion?.item || itemNameSk || (box ? box.name : 'Item');
   const qty = parseInt(document.getElementById('qtyInput').value, 10) || 1;
 
   const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
@@ -884,6 +965,7 @@ async function finalize(status) {
 
   const { data: itemRows } = await sb.from('items').insert({
     name: itemName,
+    name_sk: itemNameSk || null,
     description: currentSuggestion?.reason || null,
     box_id: box ? box.id : null,
     status: status,
@@ -901,7 +983,7 @@ async function finalize(status) {
   document.getElementById('resultCard').classList.remove('show');
   currentFile = null; currentSuggestion = null;
   document.getElementById('fileInput').value = '';
-  if (box) toast(`Saved to ${box.name}${status === 'later' ? ' (check later)' : ''}`, !!lastSaved);
+  if (box) toast(t('savedTo')(BN(box), status === 'later'), !!lastSaved);
   loadLog();
   await loadStreak();
   if (box) flashBin(box.id);
@@ -914,25 +996,26 @@ function photoUrl(path) {
 
 function renderRows(data) {
   const logList = document.getElementById('logList');
-  if (!data || !data.length) { logList.innerHTML = `<div class="empty">${showingRemoved ? 'No removed items.' : 'No items found.'}</div>`; return; }
+  if (!data || !data.length) { logList.innerHTML = `<div class="empty">${showingRemoved ? t('noRemoved') : t('noFound')}</div>`; return; }
   logList.innerHTML = data.map(it => {
     const img = it.item_photos && it.item_photos[0] ? `<img src="${photoUrl(it.item_photos[0].image_path)}" alt="">` : '';
-    const boxName = it.box ? it.box.name : 'Unsorted';
-    const itemLabel = it.name || boxName;
+    const boxName = it.box ? BN(it.box) : t('unsorted');
+    const itemLabel = escapeHtml(INAME(it) || boxName);
+    const alt = IALT(it) ? `<span class="alt">${escapeHtml(IALT(it))}</span>` : '';
     const qtyTxt = it.qty && it.qty > 1 ? ` ×${it.qty}` : '';
-    const time = new Date(it.created_at).toLocaleString();
-    const removedNote = it.removed_at ? `<div style="color:var(--sub);font-size:.75rem;">Removed ${new Date(it.removed_at).toLocaleString()}</div>` : '';
+    const time = new Date(it.created_at).toLocaleString(LANG === 'sk' ? 'sk-SK' : undefined);
+    const removedNote = it.removed_at ? `<div style="color:var(--sub);font-size:.75rem;">${t('removedAt')} ${new Date(it.removed_at).toLocaleString(LANG === 'sk' ? 'sk-SK' : undefined)}</div>` : '';
     const actions = it.removed_at
       ? `<button class="icon-btn" onclick="restoreItem('${it.id}')" title="Restore to bin">↺</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete permanently">🗑</button>`
       : `<button class="icon-btn" onclick="startEdit('${it.id}')" title="Edit">✎</button><button class="icon-btn" onclick="removeItem('${it.id}')" title="Remove from bin (keeps history)">📤</button><button class="icon-btn" onclick="deleteItem('${it.id}')" title="Delete permanently">🗑</button>`;
-    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt} <span style="color:var(--sub);font-size:.8rem;">→ ${boxName}</span></div><div class="time">${time}</div>${removedNote}</div><div class="row-actions"><span class="status-pill ${it.status}">${it.status}</span>${actions}</div></div>`;
+    return `<div class="log-item" data-id="${it.id}">${img}<div class="meta"><div>${boxDot(it.box)}${itemLabel}${qtyTxt}${alt} <span style="color:var(--sub);font-size:.8rem;">→ ${escapeHtml(boxName)}</span></div><div class="time">${time}</div>${removedNote}</div><div class="row-actions"><span class="status-pill ${it.status}">${(t('status') || {})[it.status] || it.status}</span>${actions}</div></div>`;
   }).join('');
 }
 
 async function loadLog() {
   let q = sb
     .from('items')
-    .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
+    .select('id, name, name_sk, description, status, created_at, removed_at, qty, box:box_id(id, name, name_sk, color_hex, emoji), item_photos(image_path)')
     .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(filterBoxId ? 500 : (showingAll ? 500 : 15));
@@ -940,7 +1023,7 @@ async function loadLog() {
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
   const { data } = await q;
   const fb = filterBoxId && boxCache.find(b => b.id === filterBoxId);
-  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? 'Removed ' : (fb ? fb.name + ' ' : 'Recent');
+  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? t('removedT') + ' ' : (fb ? BN(fb) + ' ' : t('recent'));
   renderRows(data);
 }
 
@@ -948,19 +1031,20 @@ async function searchItems(term) {
   if (!term) { loadLog(); return; }
   let q = sb
     .from('items')
-    .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
-    .or(`name.ilike.%${term.replace(/[,()%*]/g, ' ').trim()}%,description.ilike.%${term.replace(/[,()%*]/g, ' ').trim()}%`)
+    .select('id, name, name_sk, description, status, created_at, removed_at, qty, box:box_id(id, name, name_sk, color_hex, emoji), item_photos(image_path)')
+    .or(['name', 'name_sk', 'description'].map(c => `${c}.ilike.%${term.replace(/[,()%*]/g, ' ').trim()}%`).join(','))
     .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(200);
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
   const { data } = await q;
-  document.getElementById('logTitle').firstChild.textContent = `Results (${data ? data.length : 0}) `;
+  document.getElementById('logTitle').firstChild.textContent = `${t('results')} (${data ? data.length : 0}) `;
   renderRows(data);
 }
 
 function setSearching(term) {
   document.body.classList.toggle('searching', !!term);
+  updateSnapLabel();
 }
 
 async function removeItem(id) {
@@ -976,27 +1060,29 @@ async function restoreItem(id) {
 async function startEdit(id) {
   const row = document.querySelector(`.log-item[data-id="${id}"]`);
   if (!row) return;
-  const { data } = await sb.from('items').select('id, name, box_id').eq('id', id).single();
+  const { data } = await sb.from('items').select('id, name, name_sk, box_id').eq('id', id).single();
   if (!data) return;
   const meta = row.querySelector('.meta');
-  const boxOptions = boxCache.map(b => `<option value="${b.id}" ${b.id === data.box_id ? 'selected' : ''}>${b.emoji ? b.emoji + ' ' : ''}${b.name}</option>`).join('');
+  const boxOptions = boxCache.map(b => `<option value="${b.id}" ${b.id === data.box_id ? 'selected' : ''}>${b.emoji ? b.emoji + ' ' : ''}${escapeHtml(BN(b))}</option>`).join('');
   meta.innerHTML = `<div class="edit-row">
-    <input type="text" value="${(data.name || '').replace(/"/g, '&quot;')}" id="editName-${id}">
+    <input type="text" value="${(data.name_sk || '').replace(/"/g, '&quot;')}" id="editNameSk-${id}" placeholder="SK">
+    <input type="text" value="${(data.name || '').replace(/"/g, '&quot;')}" id="editName-${id}" placeholder="EN">
     <select id="editBox-${id}">${boxOptions}</select>
-    <button class="link-btn" onclick="saveEdit('${id}')">Save</button>
-    <button class="link-btn" onclick="loadLog()">Cancel</button>
+    <button class="link-btn" onclick="saveEdit('${id}')">${t('save')}</button>
+    <button class="link-btn" onclick="loadLog()">${t('cancel')}</button>
   </div>`;
 }
 
 async function saveEdit(id) {
   const name = document.getElementById(`editName-${id}`).value.trim();
+  const name_sk = document.getElementById(`editNameSk-${id}`).value.trim() || null;
   const boxId = parseInt(document.getElementById(`editBox-${id}`).value, 10);
-  await sb.from('items').update({ name, box_id: boxId }).eq('id', id);
+  await sb.from('items').update({ name: name || name_sk || '', name_sk, box_id: boxId }).eq('id', id);
   loadLog(); loadCounts(); flashBin(boxId);
 }
 
 async function deleteItem(id) {
-  if (!confirm('Permanently delete this item? This cannot be undone — use "remove" instead if it might come back.')) return;
+  if (!confirm(t('delQ'))) return;
   await sb.from('item_photos').delete().eq('item_id', id);
   await sb.from('items').delete().eq('id', id);
   loadLog();
@@ -1007,7 +1093,7 @@ async function loadStreak() {
   const { data } = await sb.from('items').select('created_at').eq('household_id', HH);
   if (!data) { document.getElementById('streakLine').textContent = ''; return; }
   const days = new Set(data.map(r => new Date(r.created_at).toDateString()));
-  document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
+  document.getElementById('streakLine').textContent = t('streak')(data.length, days.size);
   await loadCounts();
 }
 
@@ -1032,7 +1118,7 @@ function hexToArgb(hex) {
 async function exportCsv() {
   const { data } = await sb
     .from('items')
-    .select('name, description, status, created_at, qty, box:box_id(name, color_hex)')
+    .select('name, name_sk, description, status, created_at, qty, box:box_id(name, name_sk, color_hex)')
     .eq('household_id', HH)
     .order('created_at', { ascending: false })
     .limit(2000);
@@ -1043,8 +1129,10 @@ async function exportCsv() {
 
   // Box first, then Item — matches how the boxes are actually used to find things.
   sheet.columns = [
-    { header: 'Box', key: 'box', width: 24 },
-    { header: 'Item', key: 'item', width: 32 },
+    { header: 'Box (SK)', key: 'boxsk', width: 24 },
+    { header: 'Box (EN)', key: 'box', width: 24 },
+    { header: 'Vec (SK)', key: 'itemsk', width: 32 },
+    { header: 'Item (EN)', key: 'item', width: 32 },
     { header: 'Qty', key: 'qty', width: 8 },
     { header: 'Status', key: 'status', width: 14 },
     { header: 'Description', key: 'description', width: 48 },
@@ -1063,7 +1151,9 @@ async function exportCsv() {
     const bgHex = it.box && it.box.color_hex ? it.box.color_hex : '#f2f2f2';
     const fgHex = textColorFor(bgHex);
     const row = sheet.addRow({
+      boxsk: it.box ? (it.box.name_sk || '') : '',
       box: it.box ? it.box.name : '',
+      itemsk: it.name_sk || '',
       item: it.name || '',
       qty: it.qty || 1,
       status: it.status || '',
@@ -1087,7 +1177,9 @@ async function exportCsv() {
 }
 
 document.getElementById('fileInput').addEventListener('change', handleCapture);
-document.getElementById('snapBtn').addEventListener('click', openCamera);
+document.getElementById('snapBtn').addEventListener('click', () => { if (onSubPage()) goHome(); else openCamera(); });
+document.getElementById('brandBtn').addEventListener('click', goHome);
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
 document.getElementById('camCancelBtn').addEventListener('click', closeCamera);
 document.getElementById('camShutterBtn').addEventListener('click', captureFromCamera);
 document.getElementById('camSwitchBtn').addEventListener('click', switchCamera);
@@ -1106,15 +1198,15 @@ document.getElementById('cancelBtn').addEventListener('click', cancelCapture);
 document.getElementById('exportBtn').addEventListener('click', exportCsv);
 document.getElementById('toggleRemovedBtn').addEventListener('click', () => {
   showingRemoved = !showingRemoved;
-  document.getElementById('toggleRemovedBtn').textContent = showingRemoved ? 'Back to active' : 'Removed items';
-  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? 'Removed ' : 'Recent';
+  document.getElementById('toggleRemovedBtn').textContent = showingRemoved ? t('backActive') : t('removedItems');
+  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? t('removedT') + ' ' : t('recent');
   document.getElementById('searchInput').value = ''; setSearching('');
   loadLog();
 });
 document.getElementById('lookupPhotoBtn').addEventListener('click', openLookupCamera);
 document.getElementById('toggleAllBtn').addEventListener('click', () => {
   showingAll = !showingAll;
-  document.getElementById('toggleAllBtn').textContent = showingAll ? 'Show recent' : 'Show all';
+  document.getElementById('toggleAllBtn').textContent = showingAll ? t('showRecent') : t('showAll');
   document.getElementById('searchInput').value = ''; setSearching('');
   loadLog();
 });
@@ -1131,12 +1223,12 @@ document.getElementById('binGrid').addEventListener('click', e => {
   const t = e.target.closest('.bin-tile'); if (!t) return;
   openBoxPage(parseInt(t.dataset.box, 10));
 });
-document.getElementById('rapidBtn').addEventListener('click', () => { setRapid(!rapid); toast(rapid ? 'Rapid mode ON — saves by itself after 3 s' : 'Rapid mode OFF'); });
+document.getElementById('rapidBtn').addEventListener('click', () => { setRapid(!rapid); toast(rapid ? t('rapidOn') : t('rapidOff')); });
 document.getElementById('undoBtn').addEventListener('click', undoLast);
 document.getElementById('clearSearchBtn').addEventListener('click', () => {
   const i = document.getElementById('searchInput'); i.value = ''; setSearching(''); loadLog();
 });
-['boxPicker', 'itemNameInput', 'qtyInput'].forEach(id => ['focus', 'input', 'change'].forEach(ev => document.getElementById(id).addEventListener(ev, cancelCountdown)));
+['boxPicker', 'itemNameInput', 'itemNameSkInput', 'qtyInput'].forEach(id => ['focus', 'input', 'change'].forEach(ev => document.getElementById(id).addEventListener(ev, cancelCountdown)));
 // --- voice search ---
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1148,21 +1240,21 @@ document.getElementById('clearSearchBtn').addEventListener('click', () => {
   document.getElementById('voiceStop').addEventListener('click', stop);
   btn.addEventListener('click', () => {
     rec = new SR();
-    rec.lang = document.documentElement.lang === 'sk' ? 'sk-SK' : 'en-US';
+    rec.lang = LANG === 'sk' ? 'sk-SK' : 'en-US';
     rec.interimResults = true; rec.maxAlternatives = 1;
-    said.textContent = 'Say the item, e.g. “Where is the Sudocrem?”';
+    said.textContent = t('sayItem');
     overlay.hidden = false;
     rec.onresult = ev => {
       const r = ev.results[ev.results.length - 1];
       said.textContent = '“' + r[0].transcript + '”';
       if (r.isFinal) {
-        const term = r[0].transcript.toLowerCase().replace(/^(where('s| is| are)?|find|look for|search( for)?|do (i|we) have)\s+(the|my|a|an|some)?\s*/i, '').replace(/[?.!]+$/, '').trim();
+        const term = r[0].transcript.toLowerCase().replace(/^(where('s| is| are)?|find|look for|search( for)?|do (i|we) have|kde (je|sú|mám|máme)|nájdi|hľadaj|hľadám|máme|mám)\s+(the|my|a|an|some)?\s*/i, '').replace(/[?.!]+$/, '').trim();
         stop();
         const i = document.getElementById('searchInput'); i.value = term; setSearching(term); searchItems(term);
         window.scrollTo({ top: document.getElementById('logTitle').offsetTop - 10, behavior: 'smooth' });
       }
     };
-    rec.onerror = () => { said.textContent = 'Could not hear you. Tap the mic and try again.'; setTimeout(stop, 1500); };
+    rec.onerror = () => { said.textContent = t('noHear'); setTimeout(stop, 1500); };
     rec.onend = () => { setTimeout(() => { overlay.hidden = true; }, 300); };
     try { rec.start(); } catch (e) { stop(); }
   });
@@ -1170,6 +1262,9 @@ document.getElementById('clearSearchBtn').addEventListener('click', () => {
 document.getElementById('householdPicker').addEventListener('change', e => setHousehold(parseInt(e.target.value, 10)));
 window.addEventListener('hashchange', () => { const h = readHousehold(); if (h !== HH) { document.getElementById('householdPicker').value = String(h); setHousehold(h); } });
 setRapid(rapid);
+applyLang();
+try { history.replaceState({ hm: 'home' }, ''); } catch (e) {}
+backGuard();
 loadHouseholds().then(() => loadBoxes()).then(() => { loadLog(); loadStreak(); });
 </script>
 </body>
