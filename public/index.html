@@ -227,6 +227,10 @@
   .clothes-btn { display:flex; flex-direction:column; justify-content:center; text-decoration:none; background:linear-gradient(135deg,#c2185b,#1e88e5); color:#fff; border-radius:14px; padding:12px 16px; margin-bottom:10px; min-height:64px; }
   .clothes-btn span { font:700 1.5rem/1 var(--display); letter-spacing:.05em; }
   .clothes-btn small { font:500 .8rem var(--body); opacity:.9; margin-top:3px; }
+  .tools-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .tool-btn { display:flex; align-items:center; justify-content:center; text-align:center; min-height:56px; border-radius:14px; text-decoration:none; font:700 1.15rem/1.1 var(--display); letter-spacing:.04em; padding:8px; }
+  #returnBtn { background:#2ee6a6; color:#062a1d; } #checkBtn { background:#ffc53d; color:#1b1400; }
+  .clothes-btn[hidden] { display:none; }
 </style>
 </head>
 <body>
@@ -299,6 +303,10 @@
 
   <section class="storage" id="storageSec">
     <h2 class="sec-h"><span data-i18n="storage">STORAGE</span> <small data-i18n="tapBox">tap a box to open it</small></h2>
+    <div class="tools-row">
+      <a class="tool-btn" id="returnBtn" href="/match.html?mode=return"><span data-i18n="returnIt">↩️ VRÁTIŤ NA MIESTO</span></a>
+      <a class="tool-btn" id="checkBtn" href="/match.html?mode=check"><span data-i18n="checkIt">✅ KONTROLA</span></a>
+    </div>
     <a class="clothes-btn" id="clothesBtn" href="/clothes.html"><span data-i18n="clothes">👕 OBLEČENIE</span><small data-i18n="clothesSub">odfoť oblečenie, Claude navrhne box</small></a>
     <div class="bin-grid" id="binGrid"></div>
   <div class="split-card">
@@ -389,12 +397,12 @@ const T = {
         recent:'Posledné', removedT:'Odstránené', results:'Výsledky', showAll:'Zobraziť všetko', showRecent:'Len posledné', removedItems:'Odstránené veci', backActive:'Späť na aktívne', noRemoved:'Žiadne odstránené veci.', noFound:'Nič sa nenašlo.', removedAt:'Odstránené', loading:'Načítavam…',
         streak:(n,d)=>`${n} roztriedených vecí · ${d} ${d===1?'aktívny deň':(d<5?'aktívne dni':'aktívnych dní')}`, savedTo:(b,l)=>`Uložené do: ${b}${l?' (skontrolovať neskôr)':''}`, savedN:(n,b)=>`Uložené ${n} ks do: ${b}`, undone:'Vrátené späť', rapidOn:'Rýchly režim ZAP — uloží sa samo po 3 s', rapidOff:'Rýchly režim VYP',
         sortFail:'Triedenie zlyhalo — zaradené do Rôzne, uprav ak treba.', dup:(n,m,b)=>`⚠ Možný duplikát — „${n}“ bolo zapísané pred ${m} min v: ${b}.`, sortingInto:b=>`Triedim do: ${b}`, detecting:'rozpoznávam veci…', maxSec:'Maximum 5 sekcií v tomto boxe.', noBin:'Sekciu sa nepodarilo vytvoriť.', delQ:'Natrvalo vymazať túto vec? Nedá sa to vrátiť — ak sa môže vrátiť, použi radšej „odstrániť“.',
-        sayItem:'Povedz vec, napr. „Kde je Sudocrem?“', noHear:'Nepočul som. Ťukni na mikrofón a skús znova.', back:'← Späť', items:n=>`${n} ${n===1?'vec':(n>1&&n<5?'veci':'vecí')}`, full:(p,c)=>`asi ${p}% plný (z ~${c})`, emptyBox:'V tomto boxe zatiaľ nič nie je.', unsorted:'Nezaradené', status:{confirmed:'potvrdené',misc:'rôzne',later:'neskôr'}, hh:n=>`Domácnosť ${n}`, save:'Uložiť', photoFind:'Hľadám…', where:'KDE TO JE', clothes:'👕 OBLEČENIE', clothesSub:'odfoť oblečenie, Claude navrhne box', openBox:'Otvoriť box', edit:'✎ Upraviť', removeIt:'📤 Odstrániť', scanHint:'Rovnaký QR kód je nalepený na boxe', section:'Sekcia', added:'Pridané', printLabels:'🖨 Tlačiť QR štítky', print:'🖨 Tlačiť', labelsTitle:'QR ŠTÍTKY', labelsHint:'Vytlač, vystrihni a nalep na box. Naskenovanie telefónom otvorí box.', qty2:'Počet', removedOk:'Odstránené zo skladu' },
+        sayItem:'Povedz vec, napr. „Kde je Sudocrem?“', noHear:'Nepočul som. Ťukni na mikrofón a skús znova.', back:'← Späť', items:n=>`${n} ${n===1?'vec':(n>1&&n<5?'veci':'vecí')}`, full:(p,c)=>`asi ${p}% plný (z ~${c})`, emptyBox:'V tomto boxe zatiaľ nič nie je.', unsorted:'Nezaradené', status:{confirmed:'potvrdené',misc:'rôzne',later:'neskôr'}, hh:n=>`Domácnosť ${n}`, save:'Uložiť', photoFind:'Hľadám…', where:'KDE TO JE', returnIt:'↩️ VRÁTIŤ NA MIESTO', checkIt:'✅ KONTROLA', clothes:'👕 OBLEČENIE', clothesSub:'odfoť oblečenie, Claude navrhne box', openBox:'Otvoriť box', edit:'✎ Upraviť', removeIt:'📤 Odstrániť', scanHint:'Rovnaký QR kód je nalepený na boxe', section:'Sekcia', added:'Pridané', printLabels:'🖨 Tlačiť QR štítky', print:'🖨 Tlačiť', labelsTitle:'QR ŠTÍTKY', labelsHint:'Vytlač, vystrihni a nalep na box. Naskenovanie telefónom otvorí box.', qty2:'Počet', removedOk:'Odstránené zo skladu' },
   en: { rapid:'Rapid', sorting:'Sorting…', cd:'Saving by itself… tap anything to stop', nameSk:'Name (Slovak)', nameEn:'Name (English)', box:'Box', qty:'Qty', confirm:'✓ Confirm', misc:'General', later:'Check later', cancel:'Cancel', saveAll:'✓ Save all to this section', storage:'STORAGE', tapBox:'tap a box to open it', split:'🗂 Split a box into sections', boxToSplit:'Box to split', sections:'Sections in this box (up to 5)', photoSection:"📷 Photo this section's items", export:'Export (color)', noItems:'No items sorted yet.', find:'FIND THE ITEM', typeName:'Type item name', listening:'LISTENING…', stop:'Stop', undo:'UNDO', sortNew:'SORT NEW ITEM', home:'⌂ BACK TO HOME',
         recent:'Recent', removedT:'Removed', results:'Results', showAll:'Show all', showRecent:'Show recent', removedItems:'Removed items', backActive:'Back to active', noRemoved:'No removed items.', noFound:'No items found.', removedAt:'Removed', loading:'Loading…',
         streak:(n,d)=>`${n} items sorted · ${d} active day${d===1?'':'s'}`, savedTo:(b,l)=>`Saved to ${b}${l?' (check later)':''}`, savedN:(n,b)=>`Saved ${n} item${n===1?'':'s'} to ${b}`, undone:'Undone', rapidOn:'Rapid mode ON — saves by itself after 3 s', rapidOff:'Rapid mode OFF',
         sortFail:'Sorting failed — filed as General, edit if needed.', dup:(n,m,b)=>`⚠ Possible duplicate — "${n}" was logged ${m} min ago in ${b}.`, sortingInto:b=>`Sorting into: ${b}`, detecting:'detecting items…', maxSec:'Maximum of 5 sections reached for this box.', noBin:'Could not create section.', delQ:'Permanently delete this item? This cannot be undone — use "remove" instead if it might come back.',
-        sayItem:'Say the item, e.g. “Where is the Sudocrem?”', noHear:'Could not hear you. Tap the mic and try again.', back:'← Back', items:n=>`${n} item${n===1?'':'s'}`, full:(p,c)=>`about ${p}% full (of ~${c})`, emptyBox:'Nothing in this box yet.', unsorted:'Unsorted', status:{confirmed:'confirmed',misc:'misc',later:'later'}, hh:n=>`Household ${n}`, save:'Save', photoFind:'Identifying…', where:'WHERE IT IS', clothes:'👕 CLOTHES', clothesSub:'photograph clothes, Claude suggests the box', openBox:'Open box', edit:'✎ Edit', removeIt:'📤 Remove', scanHint:'The same QR code is stuck on the box', section:'Section', added:'Added', printLabels:'🖨 Print QR labels', print:'🖨 Print', labelsTitle:'QR LABELS', labelsHint:'Print, cut out and stick on the box. Scanning it with the phone opens the box.', qty2:'Qty', removedOk:'Removed from storage' }
+        sayItem:'Say the item, e.g. “Where is the Sudocrem?”', noHear:'Could not hear you. Tap the mic and try again.', back:'← Back', items:n=>`${n} item${n===1?'':'s'}`, full:(p,c)=>`about ${p}% full (of ~${c})`, emptyBox:'Nothing in this box yet.', unsorted:'Unsorted', status:{confirmed:'confirmed',misc:'misc',later:'later'}, hh:n=>`Household ${n}`, save:'Save', photoFind:'Identifying…', where:'WHERE IT IS', returnIt:'↩️ RETURN ITEM', checkIt:'✅ INVENTORY CHECK', clothes:'👕 CLOTHES', clothesSub:'photograph clothes, Claude suggests the box', openBox:'Open box', edit:'✎ Edit', removeIt:'📤 Remove', scanHint:'The same QR code is stuck on the box', section:'Section', added:'Added', printLabels:'🖨 Print QR labels', print:'🖨 Print', labelsTitle:'QR LABELS', labelsHint:'Print, cut out and stick on the box. Scanning it with the phone opens the box.', qty2:'Qty', removedOk:'Removed from storage' }
 };
 let LANG = 'sk';
 try { LANG = localStorage.getItem('hm_lang') || 'sk'; } catch (e) {}
@@ -681,7 +689,14 @@ async function loadHouseholds() {
   picker.value = String(HH);
   setTitle();
 }
+function updateToolLinks() {
+  const r = document.getElementById('returnBtn'), c = document.getElementById('checkBtn'), cl = document.getElementById('clothesBtn');
+  if (r) r.href = '/match.html?mode=return&hh=' + HH;
+  if (c) c.href = '/match.html?mode=check&hh=' + HH;
+  if (cl) cl.hidden = HH !== 2; // Clothes module belongs to Household 2 only
+}
 function setTitle() {
+  updateToolLinks();
   const o = document.getElementById('householdPicker').selectedOptions[0];
   document.getElementById('hhTitle').textContent = o ? o.textContent : '';
 }
@@ -1412,7 +1427,7 @@ document.getElementById('logList').addEventListener('click', e => {
 });
 document.getElementById('bpGrid').addEventListener('click', e => { const c = e.target.closest('.bp-item'); if (c && c.dataset.id) openItem(c.dataset.id); });
 document.getElementById('printLabelsBtn').addEventListener('click', openLabels);
-document.getElementById('clothesBtn').addEventListener('click', () => { try { localStorage.setItem('hm_household', String(HH)); localStorage.setItem('hm_lang', LANG); } catch (e) {} });
+['clothesBtn', 'returnBtn', 'checkBtn'].forEach(id => document.getElementById(id).addEventListener('click', () => { try { localStorage.setItem('hm_household', String(HH)); localStorage.setItem('hm_lang', LANG); } catch (e) {} }));
 </script>
 </body>
 </html>
