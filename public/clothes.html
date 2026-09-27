@@ -162,7 +162,7 @@ function status(msg, spin) { app.innerHTML = `<div class="status">${spin ? '<div
 async function loadBoxes() {
   const { data: b, error } = await sb.from('clothes_boxes').select('*').order('sort_order');
   if (error) throw error;
-  const { data: items } = await sb.from('clothes_items').select('box_id, qty').eq('household_id', HH);
+  const { data: items } = await sb.from('clothes_items').select('box_id, qty').eq('household_id', HH).is('deleted_at', null);
   const counts = {};
   (items || []).forEach(i => counts[i.box_id] = (counts[i.box_id] || 0) + (i.qty || 1));
   boxes = b.map(x => ({ ...x, count: counts[x.id] || 0 }));
@@ -270,7 +270,7 @@ async function renderBox(boxId) {
   const box = boxes.find(b => b.id === boxId);
   const [{ data: photos }, { data: items }] = await Promise.all([
     sb.from('clothes_photos').select('*').eq('box_id', boxId).eq('household_id', HH).order('created_at', { ascending:false }),
-    sb.from('clothes_items').select('*').eq('box_id', boxId).eq('household_id', HH).order('created_at', { ascending:false })
+    sb.from('clothes_items').select('*').eq('box_id', boxId).eq('household_id', HH).is('deleted_at', null).order('created_at', { ascending:false })
   ]);
   const urls = {};
   if (photos && photos.length) {

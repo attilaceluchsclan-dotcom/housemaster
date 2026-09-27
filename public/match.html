@@ -64,6 +64,23 @@
   .ghost { background:var(--card); color:var(--ink); border:1px solid var(--line) !important; }
   .boxhead { border-radius:16px; padding:14px 16px; margin-bottom:12px; }
   .boxhead .code { font:800 3rem/.9 var(--display); } .boxhead .nm { font:700 1.15rem var(--body); }
+  .ck { display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 10px; margin-bottom:6px; }
+  .ck.on { border-color:var(--ok); box-shadow:inset 4px 0 0 var(--ok); }
+  .ck label { display:flex; align-items:center; gap:10px; flex:1; min-width:0; cursor:pointer; }
+  .ck input { width:26px; height:26px; flex:none; accent-color:var(--ok); }
+  .ck .num { font:700 .85rem var(--mono); color:var(--sub); min-width:28px; }
+  .ck .nmx { min-width:0; overflow-wrap:anywhere; } .ck .nmx small { color:var(--sub); }
+  .ck .src { font-size:1.1rem; width:24px; text-align:center; }
+  .del { border:none; background:transparent; font-size:1.2rem; padding:6px 8px; cursor:pointer; border-radius:8px; }
+  .prog { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+  .prog div { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; font:700 1.5rem var(--display); }
+  .prog small { display:block; font:600 .72rem var(--body); color:var(--sub); letter-spacing:.02em; }
+  .form { background:var(--card); border:1px solid var(--line); border-left:8px solid var(--ok); border-radius:12px; padding:12px; margin-top:8px; }
+  .form input { width:100%; padding:12px; margin-bottom:8px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; }
+  .form .r { display:flex; gap:8px; } .form .r button { flex:1; height:50px; border-radius:12px; border:none; font:700 1.1rem var(--display); letter-spacing:.04em; cursor:pointer; }
+  .addbtn { width:100%; height:54px; margin-top:8px; border-radius:12px; font:700 1.15rem var(--display); letter-spacing:.04em; cursor:pointer; }
+  .addu { border:none; border-radius:10px; padding:8px 10px; background:var(--ok); color:#fff; font:700 .85rem var(--body); cursor:pointer; white-space:nowrap; }
+  .toast button { margin-left:10px; border:none; border-radius:8px; padding:4px 10px; font-weight:700; cursor:pointer; }
   .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-weight:600; z-index:30; display:none; }
   .toast.show { display:block; }
 </style>
@@ -98,21 +115,34 @@ const T = {
         pickBox:'Ktorý box kontroluješ?', found:'Nájdené', wrongBox:'Zlý box — patrí inam', notSeen:'Nevidno na fotke',
         unknownList:'Neznáme (nie sú v databáze)', photos:'Fotky', loading:'Načítavam…', hint:'Rozlož veci tak, aby bolo každú vidieť.',
         hintCheck:'Odfoť obsah boxu (1–3 fotky), potom ťukni VYHODNOTIŤ.', seen:n=>`Označené ako videné: ${n}`, noItems:'V tejto domácnosti zatiaľ nie sú žiadne veci.',
-        hh:n=>`Domácnosť ${n}`, items:'vecí', maybe:'asi' },
+        hh:n=>`Domácnosť ${n}`, items:'vecí', maybe:'asi',
+        photo:'Fotka', extra:'Fotka navyše', perPhoto:'vecí na fotku', checklist:'Zoznam vecí v boxe',
+        manualHint:'Zaškrtni, čo vidíš a fotka nenašla. Odškrtni, čo fotka našla omylom.', legend:'📷 = našla fotka · ✋ = zaškrtnuté ručne',
+        guide:(n,p)=>`Vyber ~${p} vecí, rozlož ich, odfoť a odlož bokom. Opakuj.`,
+        earlyWarn:'Len {x} z {y} fotiek — niektoré veci budú ako nevidené. Pokračovať?', back:'← ZOZNAM',
+        addItem:'＋ PRIDAŤ VEC', addHere:'＋ Pridať do boxu', name:'Názov', color:'Farba', qty:'Počet', save:'ULOŽIŤ', cancel:'ZRUŠIŤ',
+        delConfirm:'Vymazať „{x}" z databázy?', deleted:'Vymazané', undo:'Späť', added:'Pridané', empty:'Box je v databáze prázdny.' },
   en: { return:'Return item', check:'Inventory check', snap:'📷 PHOTOGRAPH ITEMS', again:'📷 NEXT PHOTO', addPhoto:'📷 ADD PHOTO', home:'⌂ HOME',
         finish:'SHOW RESULT', done:'✓ DONE', analyzing:'Searching the database…', saving:'Saving…', error:'Error — try again',
         goesTo:'Goes to', choose:'Several options — pick the box:', unknown:'Not in database', assign:'➕ Add as new item',
         pickBox:'Which box are you checking?', found:'Found', wrongBox:'Wrong box — belongs elsewhere', notSeen:'Not seen in photo',
         unknownList:'Unknown (not in database)', photos:'Photos', loading:'Loading…', hint:'Spread items out so each one is visible.',
         hintCheck:'Photograph the box contents (1–3 photos), then tap SHOW RESULT.', seen:n=>`Marked as seen: ${n}`, noItems:'No items in this household yet.',
-        hh:n=>`Household ${n}`, items:'items', maybe:'maybe' }
+        hh:n=>`Household ${n}`, items:'items', maybe:'maybe',
+        photo:'Photo', extra:'Extra photo', perPhoto:'items per photo', checklist:'Items in this box',
+        manualHint:'Tick what you see that the photo missed. Untick anything it got wrong.', legend:'📷 = found by photo · ✋ = ticked by hand',
+        guide:(n,p)=>`Take out ~${p} items, spread them, photograph, set aside. Repeat.`,
+        earlyWarn:'Only {x} of {y} photos — some items will show as not seen. Continue?', back:'← LIST',
+        addItem:'＋ ADD ITEM', addHere:'＋ Add to this box', name:'Name', color:'Color', qty:'Qty', save:'SAVE', cancel:'CANCEL',
+        delConfirm:'Delete "{x}" from the database?', deleted:'Deleted', undo:'Undo', added:'Added', empty:'This box is empty in the database.' }
 };
 const t = k => T[lang][k];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nm = i => (lang === 'sk' ? (i.name_sk || i.name_en) : (i.name_en || i.name_sk)) || '';
 const desc = d => (lang === 'sk' ? d.desc_sk : d.desc_en) || d.desc_en || d.desc_sk || '';
-const boxName = m => (lang === 'sk' ? m.box_label_sk : m.box_label_en) || m.box_label_en || '';
-const boxAlt = m => { const a = lang === 'sk' ? m.box_label_en : m.box_label_sk; return a && a !== boxName(m) ? a : ''; };
+const stripCode = (x, m) => (m && m.source === 'clothes' && x) ? x.replace(new RegExp('^' + (m.family_id || m.box_id) + '\\s+'), '') : x;
+const boxName = m => stripCode((lang === 'sk' ? m.box_label_sk : m.box_label_en) || m.box_label_en || '', m);
+const boxAlt = m => { const a = stripCode(lang === 'sk' ? m.box_label_en : m.box_label_sk, m); return a && a !== boxName(m) ? a : ''; };
 function codeOf(m) {
   if (m.box_emoji && /^[A-Z0-9]{2,3}$/.test(m.box_emoji)) return m.box_emoji;
   if (m.source === 'clothes') return m.family_id;
@@ -122,7 +152,11 @@ function codeOf(m) {
 function fgOf(hex) { const h = (hex || '#888888').replace('#', ''); const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16); return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? '#111111' : '#ffffff'; }
 const paint = hex => `background:${hex || '#888888'};color:${fgOf(hex)}`;
 
-function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2400); }
+function toast(msg, undoFn) {
+  const el = document.getElementById('toast'); el.textContent = msg;
+  if (undoFn) { const b = document.createElement('button'); b.textContent = t('undo'); b.onclick = () => { el.classList.remove('show'); undoFn(); }; el.appendChild(b); }
+  el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), undoFn ? 6000 : 2400);
+}
 function ding() {
   try { const a = new (window.AudioContext || window.webkitAudioContext)(), tt = a.currentTime;
     [[880,0],[1320,.12]].forEach(([f,d]) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f;
@@ -149,7 +183,7 @@ async function compress(file, max = 1600, q = 0.8) {
 }
 async function analyze(file) {
   const b64 = await compress(file);
-  const r = await fetch('/api/match-photo', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ imageBase64: b64, householdId: HH }) });
+  const r = await fetch('/api/match-photo', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ imageBase64: b64, householdId: HH, checkBoxId: MODE === 'check' ? state.box : null }) });
   const j = await r.json();
   if (!r.ok) throw new Error(j.error);
   return j.items || [];
@@ -210,14 +244,141 @@ async function saveReturnSeen() {
 }
 
 /* ================= INVENTORY CHECK ================= */
+const PER_PHOTO_DEFAULT = 10, PER_PHOTO_CLOTHES = 6;
+async function fetchAll(build) {             // the server returns max 1000 rows per request
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999);
+    if (error) throw error;
+    out.push(...data);
+    if (data.length < 1000) return out;
+  }
+}
 async function startCheck() {
   render = renderCheck;
   status(t('loading'), true);
-  const { data } = await sb.from('all_items').select('id,source,name_en,name_sk,box_id,box_label_en,box_label_sk,box_emoji,box_hex,family_id').eq('household_id', HH).limit(5000);
-  const boxes = {};
-  (data || []).forEach(i => { boxes[i.family_id] = boxes[i.family_id] || { ...i, count: 0 }; boxes[i.family_id].count++; });
-  state = { all: data || [], boxes: Object.values(boxes), box: null, detections: [], photos: 0, finished: false };
+  try {
+    const [all, boxRes, clRes] = await Promise.all([
+      fetchAll(() => sb.from('all_items').select('id,source,name_en,name_sk,color,box_id,box_label_en,box_label_sk,box_emoji,box_hex,family_id').eq('household_id', HH).order('id')),
+      sb.from('boxes').select('id,name,name_sk,emoji,color_hex,parent_box_id').eq('household_id', HH).is('parent_box_id', null).order('id'),
+      HH === 2 ? sb.from('clothes_boxes').select('*').order('sort_order') : Promise.resolve({ data: [] })
+    ]);
+    const counts = {};
+    all.forEach(i => { counts[i.family_id] = (counts[i.family_id] || 0) + 1; });
+    const boxes = (boxRes.data || []).map(b => ({ family_id: String(b.id), source: 'bin', box_label_en: b.name, box_label_sk: b.name_sk || b.name, box_emoji: b.emoji, box_hex: b.color_hex || '#888888' }));
+    (clRes.data || []).forEach(b => boxes.push({ family_id: b.id, source: 'clothes', box_label_en: b.name_en, box_label_sk: b.name_sk, box_emoji: b.id, box_hex: b.hex || '#b06ab3' }));
+    const known = new Set(boxes.map(b => b.family_id));
+    all.forEach(i => { if (!known.has(i.family_id)) { known.add(i.family_id); boxes.push({ family_id: i.family_id, source: i.source, box_label_en: i.box_label_en, box_label_sk: i.box_label_sk, box_emoji: i.box_emoji, box_hex: i.box_hex }); } });
+    boxes.forEach(b => { b.count = counts[b.family_id] || 0; });
+    state = { all, boxes, box: null, photos: 0, finished: false,
+      auto: new Set(), manual: new Set(), unticked: new Set(), wrong: new Map(), unknown: new Map(), resolved: new Set(), adding: null };
+  } catch (e) { console.error(e); return status(t('error')); }
   render();
+}
+const boxInfo = () => state.boxes.find(b => b.family_id === state.box) || { family_id: state.box, source: 'bin' };
+const perPhoto = () => boxInfo().source === 'clothes' ? PER_PHOTO_CLOTHES : PER_PHOTO_DEFAULT;
+const expectedItems = () => state.all.filter(i => i.family_id === state.box);
+const photosNeeded = () => Math.max(1, Math.ceil(expectedItems().length / perPhoto()));
+function keepScroll(fn) { const y = window.scrollY; fn(); window.scrollTo(0, y); }
+
+// Called ONCE per photo, so ticking/unticking never reshuffles earlier results.
+function processDetections(items) {
+  const expectedIds = new Set(expectedItems().map(i => i.id));
+  const taken = id => state.auto.has(id) || state.manual.has(id);
+  items.forEach(d => {
+    if (d.status === 'unknown' || !d.matches || !d.matches.length) {
+      const key = (d.desc_en || d.desc_sk || '').toLowerCase();
+      if (key && !state.unknown.has(key)) state.unknown.set(key, d);
+      return;
+    }
+    const inBox = d.matches.find(m => expectedIds.has(m.id) && !taken(m.id));
+    if (inBox) { state.auto.add(inBox.id); return; }
+    if (d.matches.some(m => expectedIds.has(m.id))) return;           // already counted
+    const m = d.matches.find(m => m.family_id !== state.box);
+    if (m && !state.wrong.has(m.id)) state.wrong.set(m.id, { d, m });
+  });
+}
+function computeCheck() {
+  const expected = expectedItems();
+  const ids = new Set(expected.map(i => i.id));
+  const foundIds = new Set([...state.auto].filter(id => ids.has(id) && !state.unticked.has(id)));
+  state.manual.forEach(id => { if (ids.has(id)) foundIds.add(id); });
+  return { expected, foundIds,
+    found: expected.filter(i => foundIds.has(i.id)),
+    notSeen: expected.filter(i => !foundIds.has(i.id)),
+    wrong: [...state.wrong.values()],
+    unknown: [...state.unknown.entries()].filter(([k]) => !state.resolved.has(k)).map(([k, d]) => ({ ...d, key: k })) };
+}
+async function setDeleted(item, on) {
+  const val = on ? new Date().toISOString() : null;
+  const q = item.source === 'clothes'
+    ? sb.from('clothes_items').update({ deleted_at: val }).eq('id', item.id).eq('household_id', HH)
+    : sb.from('items').update({ removed_at: val }).eq('id', item.id).eq('household_id', HH);
+  const { error } = await q; if (error) throw error;
+}
+function adjustCount(fid, d) { const b = state.boxes.find(x => x.family_id === fid); if (b) b.count = Math.max(0, b.count + d); }
+async function deleteItem(id) {
+  const item = state.all.find(i => i.id === id);
+  if (!item || !confirm(t('delConfirm').replace('{x}', nm(item)))) return;
+  try { await setDeleted(item, true); } catch (e) { console.error(e); toast(t('error')); return; }
+  const pos = state.all.indexOf(item);
+  state.all.splice(pos, 1); adjustCount(item.family_id, -1);
+  const had = { m: state.manual.has(id), a: state.auto.has(id), u: state.unticked.has(id) };
+  state.manual.delete(id); state.auto.delete(id); state.unticked.delete(id);
+  keepScroll(render);
+  toast(`🗑 ${t('deleted')}: ${nm(item)}`, async () => {
+    try { await setDeleted(item, false); } catch (e) { console.error(e); toast(t('error')); return; }
+    state.all.splice(pos, 0, item); adjustCount(item.family_id, 1);
+    if (had.m) state.manual.add(id); if (had.a) state.auto.add(id); if (had.u) state.unticked.add(id);
+    keepScroll(render);
+  });
+}
+async function addItem(name, color, qty) {
+  const b = boxInfo(), now = new Date().toISOString();
+  let row, res;
+  if (b.source === 'clothes') {
+    res = await sb.from('clothes_items').insert({ household_id: HH, box_id: b.family_id, name_en: name, name_sk: name, color: color || null, qty, keywords: name, last_seen_at: now }).select('id').single();
+  } else {
+    res = await sb.from('items').insert({ household_id: HH, box_id: parseInt(b.family_id, 10), name, name_sk: name, color: color || null, qty, keywords: name, status: 'confirmed', last_seen_at: now }).select('id').single();
+  }
+  if (res.error) throw res.error;
+  row = { id: String(res.data.id), source: b.source, name_en: name, name_sk: name, color, box_id: b.family_id, family_id: b.family_id,
+          box_label_en: b.box_label_en, box_label_sk: b.box_label_sk, box_emoji: b.box_emoji, box_hex: b.box_hex };
+  state.all.push(row); state.manual.add(row.id); adjustCount(b.family_id, 1);
+}
+function checklistHtml(r) {
+  if (!r.expected.length) return `<div class="hint">${t('empty')}</div>`;
+  return r.expected.map((i, n) => {
+    const on = r.foundIds.has(i.id), src = state.manual.has(i.id) ? '✋' : (on ? '📷' : '');
+    return `<div class="ck ${on ? 'on' : ''}"><label><input type="checkbox" data-id="${esc(i.id)}" ${on ? 'checked' : ''}>
+      <span class="num">${n + 1}.</span><span class="nmx">${esc(nm(i))}${i.color ? ` <small>· ${esc(i.color)}</small>` : ''}</span></label>
+      <span class="src">${src}</span><button type="button" class="del" data-del="${esc(i.id)}" aria-label="delete">🗑</button></div>`;
+  }).join('');
+}
+function addFormHtml() {
+  if (!state.adding) return `<button type="button" class="addbtn ghost" id="addBtn">${t('addItem')}</button>`;
+  return `<div class="form"><input id="fName" placeholder="${t('name')}" value="${esc(state.adding.name || '')}">
+    <input id="fColor" placeholder="${t('color')}" value="${esc(state.adding.color || '')}">
+    <input id="fQty" type="number" min="1" value="1" placeholder="${t('qty')}">
+    <div class="r"><button type="button" class="ghost" id="fCancel">${t('cancel')}</button><button type="button" class="done" id="fSave">${t('save')}</button></div></div>`;
+}
+function bindList() {
+  app.querySelectorAll('.ck input[type=checkbox]').forEach(cb => cb.onchange = () => {
+    const id = cb.dataset.id;
+    if (cb.checked) { state.manual.add(id); state.unticked.delete(id); } else { state.manual.delete(id); state.unticked.add(id); }
+    keepScroll(render);
+  });
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteItem(b.dataset.del));
+  const a = document.getElementById('addBtn'); if (a) a.onclick = () => { state.adding = { name: '', color: '' }; keepScroll(render); const f = document.getElementById('fName'); if (f) f.focus(); };
+  const c = document.getElementById('fCancel'); if (c) c.onclick = () => { state.adding = null; keepScroll(render); };
+  const s = document.getElementById('fSave'); if (s) s.onclick = async () => {
+    const name = document.getElementById('fName').value.trim(); if (!name) return;
+    const color = document.getElementById('fColor').value.trim(), qty = Math.max(1, parseInt(document.getElementById('fQty').value, 10) || 1);
+    s.disabled = true;
+    try { const key = state.adding.unknownKey; await addItem(name, color, qty); if (key) state.resolved.add(key); state.adding = null; ding(); toast(`${t('added')}: ${name}`); }
+    catch (e) { console.error(e); toast(t('error')); s.disabled = false; return; }
+    keepScroll(render);
+  };
 }
 function renderCheck() {
   if (!state.all) return;
@@ -226,50 +387,60 @@ function renderCheck() {
       <div class="grid">${state.boxes.map(b => `<button type="button" class="tile" data-box="${esc(b.family_id)}" style="${paint(b.box_hex)}">
         <span class="code">${esc(codeOf(b))}</span><span class="nm">${esc(boxName(b))}</span><span class="n">${b.count} ${t('items')}</span></button>`).join('')}</div>`
       : `<div class="status">${t('noItems')}</div>`;
-    app.querySelectorAll('[data-box]').forEach(el => el.onclick = () => { state.box = el.dataset.box; render(); });
+    app.querySelectorAll('[data-box]').forEach(el => el.onclick = () => { state.box = el.dataset.box; render(); window.scrollTo(0, 0); });
     setBar(`<button class="home" id="homeBtn">${t('home')}</button>`);
     return;
   }
-  const b = state.boxes.find(x => x.family_id === state.box);
-  const head = `<div class="boxhead" style="${paint(b.box_hex)}"><div class="code">${esc(codeOf(b))}</div><div class="nm">${esc(boxName(b))}</div><div>${b.count} ${t('items')}</div></div>`;
+  const b = boxInfo(), r = computeCheck();
+  const head = `<div class="boxhead" style="${paint(b.box_hex)}"><div class="code">${esc(codeOf(b))}</div><div class="nm">${esc(boxName(b))}</div><div>${r.expected.length} ${t('items')}</div></div>`;
   if (!state.finished) {
-    app.innerHTML = `${head}<button class="big" id="snap">${state.photos ? t('addPhoto') : t('snap')}</button>
-      <div class="hint">${t('hintCheck')}<br>${t('photos')}: <b>${state.photos}</b></div>`;
+    const need = photosNeeded(), enough = state.photos >= need;
+    app.innerHTML = `${head}
+      <div class="prog"><div>${enough ? t('extra') : `${state.photos + 1} / ${need}`}<small>📷 ${t('photo')} · ${perPhoto()} ${t('perPhoto')}</small></div>
+        <div>${r.found.length} / ${r.expected.length}<small>✅ ${t('found')}</small></div></div>
+      <button class="big" id="snap">${state.photos ? t('addPhoto') : t('snap')}</button>
+      <div class="hint">${t('guide')(r.expected.length, perPhoto())}</div>
+      <div class="sec">${t('checklist')}<small>${r.found.length} / ${r.expected.length}</small></div>
+      <div class="hint" style="text-align:left">${t('manualHint')}<br>${t('legend')}</div>
+      ${checklistHtml(r)}${addFormHtml()}`;
     document.getElementById('snap').onclick = () => cam.click();
-    setBar(state.photos ? `<button class="ghost" id="homeBtn" style="flex:1">⌂</button><button class="done" id="finBtn">${t('finish')}</button>`
-                        : `<button class="home" id="homeBtn">${t('home')}</button>`);
-    const f = document.getElementById('finBtn'); if (f) f.onclick = () => { state.finished = true; render(); };
+    bindList();
+    const canFinish = state.photos > 0 || state.manual.size > 0;
+    setBar(canFinish ? `<button class="ghost" id="homeBtn" style="flex:1">⌂</button><button class="done" id="finBtn">${t('finish')}</button>`
+                     : `<button class="home" id="homeBtn">${t('home')}</button>`);
+    const f = document.getElementById('finBtn');
+    if (f) f.onclick = () => {
+      if (state.photos > 0 && state.photos < need && r.notSeen.length && !confirm(t('earlyWarn').replace('{x}', state.photos).replace('{y}', need))) return;
+      state.finished = true; render(); window.scrollTo(0, 0);
+    };
     return;
   }
-  const expected = state.all.filter(i => i.family_id === state.box);
-  const foundIds = new Set(), wrong = [], unknown = [];
-  state.detections.forEach(d => {
-    if (d.status === 'unknown') { unknown.push(d); return; }
-    const inBox = d.matches.find(m => m.family_id === state.box && !foundIds.has(m.id));
-    if (inBox) foundIds.add(inBox.id); else wrong.push({ d, m: d.matches[0] });
-  });
-  const found = expected.filter(i => foundIds.has(i.id));
-  const notSeen = expected.filter(i => !foundIds.has(i.id));
   const row = (color, title, sub, chip) => `<div class="row" style="border-left-color:${color}"><div class="t">${title}${sub ? `<small>${sub}</small>` : ''}</div>${chip || ''}</div>`;
+  const srcIcon = i => state.manual.has(i.id) ? '✋ ' : '📷 ';
   app.innerHTML = `${head}
     <div class="counts">
-      <div style="background:var(--ok)">${found.length}<small>${t('found')}</small></div>
-      <div style="background:#7c4dff">${wrong.length}<small>${lang === 'sk' ? 'Zlý box' : 'Wrong box'}</small></div>
-      <div style="background:var(--warn)">${notSeen.length}<small>${lang === 'sk' ? 'Nevidno' : 'Not seen'}</small></div>
-      <div style="background:var(--bad)">${unknown.length}<small>${lang === 'sk' ? 'Neznáme' : 'Unknown'}</small></div>
+      <div style="background:var(--ok)">${r.found.length}<small>${t('found')}</small></div>
+      <div style="background:#7c4dff">${r.wrong.length}<small>${lang === 'sk' ? 'Zlý box' : 'Wrong box'}</small></div>
+      <div style="background:var(--warn)">${r.notSeen.length}<small>${lang === 'sk' ? 'Nevidno' : 'Not seen'}</small></div>
+      <div style="background:var(--bad)">${r.unknown.length}<small>${lang === 'sk' ? 'Neznáme' : 'Unknown'}</small></div>
     </div>
-    <div class="sec">✅ ${t('found')}<small>${found.length}</small></div>${found.map(i => row('var(--ok)', esc(nm(i)))).join('')}
-    <div class="sec">↩️ ${t('wrongBox')}<small>${wrong.length}</small></div>${wrong.map(w => row(w.m.box_hex, esc(desc(w.d)), '', `<span class="chip" style="${paint(w.m.box_hex)}">→ ${esc(codeOf(w.m))} · ${esc(boxName(w.m))}</span>`)).join('')}
-    <div class="sec">❔ ${t('notSeen')}<small>${notSeen.length}</small></div>${notSeen.map(i => row('var(--warn)', esc(nm(i)))).join('')}
-    <div class="sec">❓ ${t('unknownList')}<small>${unknown.length}</small></div>${unknown.map(d => row('var(--bad)', esc(desc(d)))).join('')}`;
-  setBar(`<button class="ghost" id="homeBtn" style="flex:1">⌂</button><button class="done" id="doneBtn">${t('done')}</button>`);
+    <div class="sec">✅ ${t('found')}<small>${r.found.length} / ${r.expected.length}</small></div>${r.found.map(i => row('var(--ok)', srcIcon(i) + esc(nm(i)))).join('')}
+    <div class="sec">↩️ ${t('wrongBox')}<small>${r.wrong.length}</small></div>${r.wrong.map(w => row(w.m.box_hex, esc(desc(w.d)), esc(nm(w.m)), `<span class="chip" style="${paint(w.m.box_hex)}">→ ${esc(codeOf(w.m))} · ${esc(boxName(w.m))}</span>`)).join('')}
+    <div class="sec">❔ ${t('notSeen')}<small>${r.notSeen.length}</small></div>${r.notSeen.map(i => row('var(--warn)', esc(nm(i)), '', `<button type="button" class="del" data-del="${esc(i.id)}" aria-label="delete">🗑</button>`)).join('')}
+    <div class="sec">❓ ${t('unknownList')}<small>${r.unknown.length}</small></div>${r.unknown.map((d, k) => row('var(--bad)', esc(desc(d)), '', `<button type="button" class="addu" data-addu="${k}">${t('addHere')}</button>`)).join('')}`;
+  app.querySelectorAll('[data-del]').forEach(x => x.onclick = () => deleteItem(x.dataset.del));
+  app.querySelectorAll('[data-addu]').forEach(x => x.onclick = () => {
+    const d = r.unknown[Number(x.dataset.addu)];
+    state.adding = { name: desc(d), color: '', unknownKey: d.key }; state.finished = false; render();
+    const fn = document.getElementById('fName'); if (fn) fn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  setBar(`<button class="ghost" id="backBtn" style="flex:1">${t('back')}</button><button class="done" id="doneBtn">${t('done')}</button>`);
+  document.getElementById('backBtn').onclick = () => { state.finished = false; render(); };
   document.getElementById('doneBtn').onclick = async () => {
     status(t('saving'), true);
-    const n = await markSeen([...found, ...wrong.map(w => w.m)]);
-    if (n) ding();
-    location.href = HOME_URL;
+    try { const n = await markSeen([...r.found, ...r.wrong.map(w => w.m)]); if (n) ding(); location.href = HOME_URL; }
+    catch (e) { console.error(e); toast(t('error')); render(); }
   };
-  window.scrollTo(0, 0);
 }
 
 /* ================= CAMERA ================= */
@@ -280,7 +451,7 @@ cam.onchange = async () => {
   try {
     const items = await analyze(file);
     if (MODE === 'return') { state.results = items; state.picks = {}; }
-    else { state.detections.push(...items); state.photos++; }
+    else { processDetections(items); state.photos++; }
   } catch (e) { console.error(e); status(t('error')); await new Promise(r => setTimeout(r, 1500)); }
   render();
 };
@@ -289,7 +460,7 @@ cam.onchange = async () => {
 history.replaceState({ m:'root' }, ''); history.pushState({ m:'guard' }, '');
 window.addEventListener('popstate', () => {
   if (MODE === 'check' && state.finished) { state.finished = false; render(); }
-  else if (MODE === 'check' && state.box) { state.box = null; state.detections = []; state.photos = 0; render(); }
+  else if (MODE === 'check' && state.box) { Object.assign(state, { box: null, photos: 0, auto: new Set(), manual: new Set(), unticked: new Set(), wrong: new Map(), unknown: new Map(), resolved: new Set(), adding: null }); render(); }
   else if (MODE === 'return' && state.results) { state.results = null; render(); }
   else { location.href = HOME_URL; return; }
   history.pushState({ m:'guard' }, '');
