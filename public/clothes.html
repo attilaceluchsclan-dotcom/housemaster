@@ -34,7 +34,7 @@
   .sec .dot { width:12px; height:12px; border-radius:3px; }
   .sec small { margin-left:auto; font:500 .8rem var(--mono); color:var(--sub); text-transform:none; letter-spacing:0; }
   .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .tile { position:relative; text-align:left; border:2px solid transparent; border-radius:12px; padding:9px 10px 10px; min-height:88px; cursor:pointer; color:#fff; display:flex; flex-direction:column; }
+  .tile { position:relative; text-align:left; border:2px solid transparent; border-radius:12px; padding:9px 10px 10px; min-height:88px; cursor:pointer; display:flex; flex-direction:column; }
   .tile.her { background:var(--her); } .tile.child { background:var(--child); }
   .tile .id { font:800 1.5rem/1 var(--display); }
   .tile .nm { font:600 .78rem/1.2 var(--body); margin-top:4px; }
@@ -59,7 +59,9 @@
   .status { color:var(--sub); text-align:center; padding:40px 16px; font-size:1.05rem; }
   .spin { width:44px; height:44px; border-radius:50%; border:4px solid var(--line); border-top-color:var(--accent); margin:0 auto 14px; animation:sp 1s linear infinite; }
   @keyframes sp { to { transform:rotate(360deg); } }
-  .boxhead { border-radius:16px; padding:16px; color:#fff; }
+  .boxhead { border-radius:16px; padding:16px; }
+  .boxhead .back { color:inherit; }
+  .item { border-left-width:6px !important; }
   .boxhead .id { font:800 3.4rem/.9 var(--display); }
   .boxhead .nm { font:700 1.25rem var(--body); } .boxhead .alt { opacity:.85; }
   .boxhead .st { font:500 .85rem var(--mono); margin-top:6px; }
@@ -104,11 +106,11 @@ const T = {
   sk: { title:'Oblečenie', snap:'📷 ODFOTIŤ OBLEČENIE', her:'Ona', child:'Dieťa', pcs:'ks', home:'⌂ ÚVOD',
         analyzing:'Analyzujem fotku…', saving:'Ukladám…', suggested:'Návrh', pick:'Ak návrh nesedí, ťukni na správny box.', found:'Nájdené kusy',
         save:'✓ ULOŽIŤ DO', cancel:'ZRUŠIŤ', back:'← Späť', photos:'Fotky', list:'Obsah', empty:'Zatiaľ prázdne',
-        error:'Chyba — skús znova', move:'Presunúť fotku do:', loading:'Načítavam…', saved:b=>`Uložené do ${b}`, moved:b=>`Presunuté do ${b}`, cond:{ 'new':'nové', 'used':'nosené', 'worn out':'opotrebované' } },
+        error:'Chyba — skús znova', next:'📷 ĎALŠIA FOTKA', move:'Presunúť fotku do:', loading:'Načítavam…', saved:b=>`Uložené do ${b}`, moved:b=>`Presunuté do ${b}`, cond:{ 'new':'nové', 'used':'nosené', 'worn out':'opotrebované' } },
   en: { title:'Clothes', snap:'📷 PHOTOGRAPH CLOTHES', her:'Her', child:'Child', pcs:'pcs', home:'⌂ HOME',
         analyzing:'Analyzing photo…', saving:'Saving…', suggested:'Suggested', pick:'If the suggestion is wrong, tap the right box.', found:'Items found',
         save:'✓ SAVE TO', cancel:'CANCEL', back:'← Back', photos:'Photos', list:'Contents', empty:'Empty so far',
-        error:'Error — try again', move:'Move photo to:', loading:'Loading…', saved:b=>`Saved to ${b}`, moved:b=>`Moved to ${b}`, cond:{ 'new':'new', 'used':'used', 'worn out':'worn out' } }
+        error:'Error — try again', next:'📷 NEXT PHOTO', move:'Move photo to:', loading:'Loading…', saved:b=>`Saved to ${b}`, moved:b=>`Moved to ${b}`, cond:{ 'new':'new', 'used':'used', 'worn out':'worn out' } }
 };
 const t = k => T[lang][k];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -118,6 +120,11 @@ const itemName = i => (lang === 'sk' ? i.name_sk : i.name_en) || i.name_en || i.
 const itemAlt = i => { const a = lang === 'sk' ? i.name_en : i.name_sk; return a && a !== itemName(i) ? a : ''; };
 
 let boxes = [], currentView = { name:'home' };
+// One color per box, so each box is easy to remember
+const COLORS = { H1:'#c2185b', H2:'#e53935', H3:'#3949ab', H4:'#f06292', H5:'#8e24aa', H6:'#6d4c41', H7:'#00897b', H8:'#757575', C1:'#43a047', C2:'#fb8c00', C3:'#1e88e5' };
+const col = id => COLORS[id] || '#888888';
+function fgOf(hex) { const h = hex.replace('#',''); const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16); return (0.299*r + 0.587*g + 0.114*b)/255 > 0.6 ? '#111111' : '#ffffff'; }
+const paint = id => `background:${col(id)};color:${fgOf(col(id))}`;
 
 function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2400); }
 function ding() {
@@ -127,7 +134,13 @@ function ding() {
       o.connect(g); g.connect(a.destination); o.start(tt+d); o.stop(tt+d+.3); }); } catch (e) {}
   try { navigator.vibrate && navigator.vibrate(60); } catch (e) {}
 }
-function homeBar() { bar.innerHTML = `<button class="home" id="homeBtn">${t('home')}</button>`; document.getElementById('homeBtn').onclick = () => { location.href = HOME_URL; }; }
+function homeBar(withSnap) {
+  bar.innerHTML = withSnap
+    ? `<button class="cancel" id="homeBtn" style="flex:1">⌂</button><button class="home" id="snapBar" style="flex:4">${t('next')}</button>`
+    : `<button class="home" id="homeBtn">${t('home')}</button>`;
+  document.getElementById('homeBtn').onclick = () => { location.href = HOME_URL; };
+  if (withSnap) document.getElementById('snapBar').onclick = () => cam.click();
+}
 
 document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { lang = b.dataset.lang; try { localStorage.setItem('hm_lang', lang); } catch (e) {} rerender(); });
 document.getElementById('viewer').onclick = e => e.currentTarget.close();
@@ -156,7 +169,7 @@ async function loadBoxes() {
 }
 function tilesHtml(owner, opts = {}) {
   return `<div class="grid">${boxes.filter(b => b.owner === owner).map(b => `
-    <button type="button" class="tile ${b.owner} ${opts.suggested === b.id ? 'suggested' : ''} ${opts.selected === b.id ? 'selected' : ''} ${opts.selected && opts.selected !== b.id ? 'dim' : ''}" data-box="${b.id}">
+    <button type="button" style="${paint(b.id)}" class="tile ${b.owner} ${opts.suggested === b.id ? 'suggested' : ''} ${opts.selected === b.id ? 'selected' : ''} ${opts.selected && opts.selected !== b.id ? 'dim' : ''}" data-box="${b.id}">
       <span class="id">${b.id}</span><span class="n">${b.count}</span><span class="nm">${esc(boxName(b))}</span>
     </button>`).join('')}</div>`;
 }
@@ -208,20 +221,21 @@ function renderReview(data) {
   const sel = boxes.find(b => b.id === selected);
   app.innerHTML = `
     <div class="preview"><img src="${previewUrl}" alt=""></div>
-    ${sug ? `<div class="sug" style="background:var(--${sug.owner})"><small>★ ${t('suggested')}</small>${sug.id} · ${esc(boxName(sug))}</div>` : ''}
+    ${sug ? `<div class="sug" style="${paint(sug.id)}"><small>★ ${t('suggested')}</small>${sug.id} · ${esc(boxName(sug))}</div>` : ''}
     <p class="hint">${t('pick')}</p>
     ${allTiles({ suggested: result.suggested_box, selected })}
     <div class="sec">${t('found')}<small>${result.items.reduce((s, i) => s + (i.qty || 1), 0)} ${t('pcs')}</small></div>
-    ${result.items.map(itemHtml).join('') || `<div class="empty">—</div>`}`;
+    ${result.items.map(i => itemHtml(i, selected)).join('') || `<div class="empty">—</div>`}`;
   app.querySelectorAll('.tile').forEach(el => el.onclick = () => renderReview({ ...data, selected: el.dataset.box }));
   bar.innerHTML = `<button class="cancel" id="cancelBtn">${t('cancel')}</button><button class="save" id="saveBtn">${t('save')} ${esc(selected)}</button>`;
   document.getElementById('cancelBtn').onclick = renderHome;
   document.getElementById('saveBtn').onclick = () => save(data);
   window.scrollTo(0, 0);
 }
-function itemHtml(i) {
+function itemHtml(i, boxId) {
+  const bc = col(boxId || i.box_id);
   const cond = (t('cond') || {})[i.condition] || i.condition || '';
-  return `<div class="item"><b>${esc(itemName(i))}</b> ${i.qty > 1 ? `<span class="q">× ${i.qty}</span>` : ''}${itemAlt(i) ? `<span class="alt">${esc(itemAlt(i))}</span>` : ''}
+  return `<div class="item" style="border-left-color:${bc}"><b>${esc(itemName(i))}</b> ${i.qty > 1 ? `<span class="q">× ${i.qty}</span>` : ''}${itemAlt(i) ? `<span class="alt">${esc(itemAlt(i))}</span>` : ''}
     <small>${[i.color, i.size, i.brand, cond].filter(Boolean).map(esc).join(' · ')}</small>
     ${i.keywords ? `<small>${esc(i.keywords)}</small>` : ''}</div>`;
 }
@@ -250,7 +264,7 @@ async function save({ blob, result, selected }) {
 
 /* ---------- BOX VIEW ---------- */
 async function renderBox(boxId) {
-  currentView = { name:'box', boxId }; setHeader(); homeBar();
+  currentView = { name:'box', boxId }; setHeader(); homeBar(true);
   status(t('loading'), true);
   if (!boxes.length) await loadBoxes();
   const box = boxes.find(b => b.id === boxId);
@@ -266,13 +280,13 @@ async function renderBox(boxId) {
   const total = (items || []).reduce((s, i) => s + (i.qty || 1), 0);
   const moveOptions = cur => boxes.map(b => `<option value="${b.id}" ${b.id === cur ? 'selected' : ''}>${b.id} – ${esc(boxName(b))}</option>`).join('');
   app.innerHTML = `
-    <div class="boxhead" style="background:var(--${box ? box.owner : 'her'})">
+    <div class="boxhead" style="${paint(boxId)}">
       <button type="button" class="back" id="backBtn">${t('back')}</button>
       <div class="id">${esc(boxId)}</div><div class="nm">${esc(box ? boxName(box) : '')}</div>${box ? `<div class="alt">${esc(boxAlt(box))}</div>` : ''}
       <div class="st">${total} ${t('pcs')} · ${photos ? photos.length : 0} ${t('photos').toLowerCase()}</div>
     </div>
     <div class="sec">${t('list')}<small>${total} ${t('pcs')}</small></div>
-    ${items && items.length ? items.map(itemHtml).join('') : `<div class="empty">${t('empty')}</div>`}
+    ${items && items.length ? items.map(i => itemHtml(i)).join('') : `<div class="empty">${t('empty')}</div>`}
     <div class="sec">${t('photos')}<small>${photos ? photos.length : 0}</small></div>
     ${(photos || []).map(p => `
       <div class="photo">
