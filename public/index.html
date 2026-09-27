@@ -4,22 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Housemaster — Snap & Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --bg:#f5f4f1; --card:#fff; --ink:#1c1b19; --sub:#6b6862;
-    --accent:#b5651d; --line:#e5e2dc; --good:#3a7d44; --later:#6b6862; --warn:#b5651d; --danger:#b3261e;
+    --bg:#f3f2f6; --card:#ffffff; --ink:#1c1a22; --sub:#5d5968; --line:#d9d5e2;
+    --accent:#553a86; --accent-ink:#ffffff; --accent-soft:#e7e0f3;
+    --good:#2e7d32; --later:#6b6478; --warn:#b26a00; --danger:#b3261e;
+    --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+    --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#161513; --card:#221f1c; --ink:#f0ede7; --sub:#a39d92; --line:#34302b; }
+    :root { color-scheme:dark; --bg:#15131a; --card:#1f1c26; --ink:#ece9f2; --sub:#a7a1b4; --line:#37323f;
+      --accent:#b59be4; --accent-ink:#1a1422; --accent-soft:#2e2640; --later:#4a4456; --warn:#f0b35a; --danger:#f2b8b5; }
   }
   * { box-sizing:border-box; }
   html, body { max-width:100%; overflow-x:hidden; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,Segoe UI,Roboto,sans-serif; min-height:100vh; padding:20px 16px 60px; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); min-height:100vh; padding:20px 16px 60px; }
   .wrap { max-width:480px; margin:0 auto; }
-  h1 { font-size:1.3rem; margin:0 0 4px; }
-  .streak { color:var(--sub); font-size:.9rem; margin-bottom:20px; }
+  h1 { font:700 1.9rem/1 var(--display); letter-spacing:.01em; margin:0 0 8px; }
+  h1 .hl { color:var(--accent); }
+  .streak { color:var(--sub); font:500 .8rem var(--mono); margin-bottom:16px; font-variant-numeric:tabular-nums; }
   .capture-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; text-align:center; margin-bottom:20px; }
-  .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:#fff; font-size:2rem; cursor:pointer; user-select:none; border:none; }
+  .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-size:2rem; cursor:pointer; user-select:none; border:none; }
   .snap-btn:active { transform:scale(.96); }
   #fileInput { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
   .camera-overlay { position:fixed; inset:0; background:#000; display:none; z-index:1000; flex-direction:column; align-items:center; justify-content:center; }
@@ -46,11 +54,11 @@
   .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .action-btn { padding:12px 10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:.9rem; cursor:pointer; width:100%; }
   .action-btn.confirm { background:var(--good); color:#fff; border-color:var(--good); }
-  .action-btn.misc { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .action-btn.misc { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
   .action-btn.later { background:var(--later); color:#fff; border-color:var(--later); }
   .action-btn.cancel { background:transparent; color:var(--danger); border-color:var(--danger); }
   .loading { color:var(--sub); font-size:.9rem; padding:10px 0; }
-  .log h2 { font-size:1rem; color:var(--sub); font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; row-gap:6px; }
+  .log h2 { font:700 1.3rem var(--display); letter-spacing:.04em; text-transform:uppercase; color:var(--ink); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; row-gap:6px; }
   .log h2 .actions { display:flex; gap:8px; flex-wrap:wrap; }
   .link-btn { background:none; border:none; color:var(--accent); font-size:.78rem; cursor:pointer; padding:2px 4px; white-space:nowrap; }
   .search-box { width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:.85rem; margin-bottom:12px; }
@@ -83,11 +91,29 @@
   .search-row { display:flex; gap:8px; align-items:center; }
   .search-row .search-box { flex:1 1 auto; }
   .search-row .link-btn { flex-shrink:0; white-space:nowrap; }
+  .bins-card { margin-bottom:20px; }
+  .bins-card h2, .sec-h { font:700 1.3rem var(--display); letter-spacing:.04em; text-transform:uppercase; margin:0 0 10px; display:flex; justify-content:space-between; align-items:baseline; }
+  .sec-h small, .bins-card h2 small { font:500 .75rem var(--mono); color:var(--sub); letter-spacing:0; text-transform:none; }
+  .bin-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .bin-tile { display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 10px; color:var(--ink); cursor:pointer; font:inherit; min-width:0; transition:background .3s, box-shadow .3s; }
+  .bin-tile[aria-pressed="true"] { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+  .bin-tile .sw { width:18px; height:18px; border-radius:4px; border:1px solid rgba(0,0,0,.25); }
+  .bin-tile .nm { font:600 .98rem/1.05 var(--display); letter-spacing:.02em; text-transform:uppercase; overflow-wrap:anywhere; }
+  .bin-tile .cd { font:400 .68rem var(--mono); color:var(--sub); }
+  .bin-tile .ct { font:500 .95rem var(--mono); font-variant-numeric:tabular-nums; }
+  .bin-tile.flash { animation:flash 1.8s ease-out; }
+  @keyframes flash { 0%,30% { background:var(--accent); color:var(--accent-ink); transform:scale(1.04); } 100% { transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .bin-tile.flash { animation:none; outline:3px solid var(--accent); } }
+  .cat-badge { display:none; align-items:center; gap:10px; border-radius:10px; padding:10px 12px; margin-bottom:12px; font:700 1.25rem/1.1 var(--display); letter-spacing:.03em; text-transform:uppercase; }
+  .cat-badge.show { display:flex; }
+  .cat-badge .code { font:500 .8rem var(--mono); opacity:.85; margin-left:auto; }
+  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:10px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); display:none; }
+  .toast.show { display:block; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Housemaster — Snap & Sort</h1>
+  <h1>Housemaster <span class="hl" id="hhTitle"></span></h1>
   <div class="field" style="margin:6px 0 4px;max-width:260px;">
     <label for="householdPicker">Household</label>
     <select id="householdPicker"><option value="1">Household 1</option><option value="2">Household 2</option></select>
@@ -140,6 +166,7 @@
     <img class="result-photo" id="resultPhoto" alt="captured item">
     <div id="loadingLine" class="loading" style="display:none;">Sorting…</div>
     <div id="resultBody" style="display:none;">
+      <div id="catBadge" class="cat-badge"></div>
       <div id="dupWarning" class="dup-warning" style="display:none;"></div>
       <div class="field">
         <label for="itemNameInput">Item name</label>
@@ -165,6 +192,11 @@
     </div>
   </div>
 
+  <div class="bins-card">
+    <h2>Bins <small id="binsHint">tap a bin to filter</small></h2>
+    <div class="bin-grid" id="binGrid"></div>
+  </div>
+
   <div class="log">
     <h2 id="logTitle">Recent
       <span class="actions">
@@ -180,6 +212,7 @@
     <div id="logList"><div class="empty">No items sorted yet.</div></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -201,6 +234,52 @@ function readHousehold() {
   return 1;
 }
 let HH = readHousehold();
+let filterBoxId = null;
+let binCounts = {};
+
+function familyOf(boxId) {
+  const b = boxCache.find(x => x.id === boxId);
+  return b && b.parent_box_id ? b.parent_box_id : boxId;
+}
+function swatchBg(b) {
+  const c1 = b.color_hex || '#999';
+  return b.color_hex2 ? `linear-gradient(135deg, ${c1} 0 50%, ${b.color_hex2} 50% 100%)` : c1;
+}
+async function loadCounts() {
+  const { data } = await sb.from('items').select('box_id, qty').eq('household_id', HH).is('removed_at', null);
+  binCounts = {};
+  (data || []).forEach(r => { const f = familyOf(r.box_id); binCounts[f] = (binCounts[f] || 0) + (r.qty || 1); });
+  renderBinGrid();
+}
+function renderBinGrid() {
+  const grid = document.getElementById('binGrid');
+  grid.innerHTML = familyBoxes().map(b => `<button type="button" class="bin-tile" data-box="${b.id}" aria-pressed="${filterBoxId === b.id}">
+      <span class="sw" style="background:${swatchBg(b)}"></span>
+      <span><span class="nm">${escapeHtml(b.name)}</span>${b.emoji && /^[A-Z]{3}$/.test(b.emoji) ? `<br><span class="cd">${b.emoji}</span>` : ''}</span>
+      <span class="ct">${binCounts[b.id] || 0}</span></button>`).join('');
+}
+function flashBin(boxId) {
+  const f = familyOf(boxId);
+  const el = document.querySelector(`.bin-tile[data-box="${f}"]`);
+  if (!el) return;
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function updateBadge() {
+  const badge = document.getElementById('catBadge');
+  const id = parseInt(document.getElementById('boxPicker').value, 10);
+  const b = boxCache.find(x => x.id === id);
+  if (!b) { badge.classList.remove('show'); return; }
+  const fam = boxCache.find(x => x.id === familyOf(b.id)) || b;
+  badge.style.background = swatchBg(fam);
+  badge.style.color = textColorFor(fam.color_hex || '#999999');
+  badge.innerHTML = `<span>→ ${escapeHtml(b.name)}</span>${fam.emoji && /^[A-Z]{3}$/.test(fam.emoji) ? `<span class="code">${fam.emoji}</span>` : ''}`;
+  badge.classList.add('show');
+}
 
 async function loadHouseholds() {
   const picker = document.getElementById('householdPicker');
@@ -208,13 +287,18 @@ async function loadHouseholds() {
   if (data && data.length) picker.innerHTML = data.map(h => `<option value="${h.id}">${escapeHtml(h.name)}</option>`).join('');
   if (![...picker.options].some(o => parseInt(o.value, 10) === HH)) HH = parseInt(picker.options[0].value, 10);
   picker.value = String(HH);
+  setTitle();
+}
+function setTitle() {
+  const o = document.getElementById('householdPicker').selectedOptions[0];
+  document.getElementById('hhTitle').textContent = o ? o.textContent : '';
 }
 
 function setHousehold(id) {
   HH = id;
   try { localStorage.setItem('hm_household', String(id)); } catch (e) {}
   history.replaceState(null, '', '#h' + id);
-  selectedBinId = null;
+  selectedBinId = null; filterBoxId = null; setTitle();
   cancelCapture(); cancelBatch();
   document.getElementById('searchInput').value = '';
   loadBoxes().then(() => { loadLog(); loadStreak(); renderBinChips(); });
@@ -231,6 +315,7 @@ async function loadBoxes() {
   });
   picker.innerHTML = ordered.map(b => `<option value="${b.id}">${b.parent_box_id ? '↳ ' : (b.emoji ? b.emoji + ' ' : '')}${b.name}</option>`).join('');
   renderFamilyPicker();
+  renderBinGrid();
 }
 
 function familyBoxes() {
@@ -508,8 +593,10 @@ async function saveBatch() {
   }
 
   cancelBatch();
+  toast(`Saved ${rows.length} item${rows.length === 1 ? '' : 's'} to ${bin.name}`);
   loadLog();
-  loadStreak();
+  await loadStreak();
+  flashBin(bin.id);
 }
 
 function cancelBatch() {
@@ -540,6 +627,7 @@ async function processCapturedFile(file) {
   loadingLine.textContent = 'Sorting…';
   resultBody.style.display = 'none';
   dupWarning.style.display = 'none';
+  document.getElementById('catBadge').classList.remove('show');
   document.getElementById('qtyInput').value = 1;
 
   try {
@@ -561,6 +649,7 @@ async function processCapturedFile(file) {
     const matched = eligibleBoxes.find(b => b.name === suggestion.box);
     document.getElementById('boxPicker').value = matched ? matched.id : fallbackBoxId();
     document.getElementById('reasoning').textContent = suggestion.reason || '';
+    updateBadge();
     await checkDuplicate(suggestion.item);
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
@@ -569,6 +658,7 @@ async function processCapturedFile(file) {
     document.getElementById('itemNameInput').value = '';
     document.getElementById('boxPicker').value = fallbackBoxId();
     document.getElementById('reasoning').textContent = 'Sorting failed — filed as miscellaneous, edit if needed.';
+    updateBadge();
     loadingLine.style.display = 'none';
     resultBody.style.display = 'block';
   }
@@ -626,8 +716,10 @@ async function finalize(status) {
   document.getElementById('resultCard').classList.remove('show');
   currentFile = null; currentSuggestion = null;
   document.getElementById('fileInput').value = '';
+  if (box) { toast(`Saved to ${box.name}${status === 'later' ? ' (check later)' : ''}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   loadLog();
-  loadStreak();
+  await loadStreak();
+  if (box) flashBin(box.id);
 }
 
 function photoUrl(path) {
@@ -657,9 +749,12 @@ async function loadLog() {
     .select('id, name, description, status, created_at, removed_at, qty, box:box_id(id, name, color_hex, emoji), item_photos(image_path)')
     .eq('household_id', HH)
     .order('created_at', { ascending: false })
-    .limit(showingAll ? 500 : 15);
+    .limit(filterBoxId ? 500 : (showingAll ? 500 : 15));
+  if (filterBoxId) q = q.in('box_id', [filterBoxId, ...binsFor(filterBoxId).map(b => b.id)]);
   q = showingRemoved ? q.not('removed_at', 'is', null) : q.is('removed_at', null);
   const { data } = await q;
+  const fb = filterBoxId && boxCache.find(b => b.id === filterBoxId);
+  document.getElementById('logTitle').firstChild.textContent = showingRemoved ? 'Removed ' : (fb ? fb.name + ' ' : 'Recent');
   renderRows(data);
 }
 
@@ -679,12 +774,12 @@ async function searchItems(term) {
 
 async function removeItem(id) {
   await sb.from('items').update({ removed_at: new Date().toISOString() }).eq('id', id);
-  loadLog();
+  loadLog(); loadCounts();
 }
 
 async function restoreItem(id) {
   await sb.from('items').update({ removed_at: null }).eq('id', id);
-  loadLog();
+  loadLog(); loadCounts();
 }
 
 async function startEdit(id) {
@@ -706,7 +801,7 @@ async function saveEdit(id) {
   const name = document.getElementById(`editName-${id}`).value.trim();
   const boxId = parseInt(document.getElementById(`editBox-${id}`).value, 10);
   await sb.from('items').update({ name, box_id: boxId }).eq('id', id);
-  loadLog();
+  loadLog(); loadCounts(); flashBin(boxId);
 }
 
 async function deleteItem(id) {
@@ -722,6 +817,7 @@ async function loadStreak() {
   if (!data) { document.getElementById('streakLine').textContent = ''; return; }
   const days = new Set(data.map(r => new Date(r.created_at).toDateString()));
   document.getElementById('streakLine').textContent = `${data.length} items sorted · ${days.size} active day${days.size===1?'':'s'}`;
+  await loadCounts();
 }
 
 function escapeHtml(v) {
@@ -838,6 +934,17 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
   searchDebounce = setTimeout(() => searchItems(term), 300);
 });
 
+document.getElementById('boxPicker').addEventListener('change', updateBadge);
+document.getElementById('binGrid').addEventListener('click', e => {
+  const t = e.target.closest('.bin-tile'); if (!t) return;
+  const id = parseInt(t.dataset.box, 10);
+  filterBoxId = filterBoxId === id ? null : id;
+  showingRemoved = false;
+  document.getElementById('toggleRemovedBtn').textContent = 'Removed items';
+  document.getElementById('searchInput').value = '';
+  renderBinGrid(); loadLog();
+  if (filterBoxId) document.getElementById('logTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 document.getElementById('householdPicker').addEventListener('change', e => setHousehold(parseInt(e.target.value, 10)));
 window.addEventListener('hashchange', () => { const h = readHousehold(); if (h !== HH) { document.getElementById('householdPicker').value = String(h); setHousehold(h); } });
 loadHouseholds().then(() => loadBoxes()).then(() => { loadLog(); loadStreak(); });
