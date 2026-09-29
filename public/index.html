@@ -30,7 +30,7 @@
   .snap-btn { display:inline-flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-size:2rem; cursor:pointer; user-select:none; border:none; }
   .snap-btn:active { transform:scale(.96); }
   #fileInput { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
-  .camera-overlay { position:fixed; inset:0; background:#000; display:none; z-index:1000; flex-direction:column; align-items:center; justify-content:center; }
+  .camera-overlay { position:fixed; inset:0; background:#000; display:none; z-index:1600; flex-direction:column; align-items:center; justify-content:center; }
   .camera-overlay.show { display:flex; }
   .camera-overlay video { width:100%; height:100%; object-fit:cover; }
   .camera-controls { position:absolute; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:40px; padding:24px 20px calc(24px + env(safe-area-inset-bottom, 0px)); background:linear-gradient(transparent, rgba(0,0,0,.6)); }
@@ -815,20 +815,37 @@ function fallbackBoxId() {
 let cameraStream = null;
 let cameraFacing = 'environment';
 
+let camBlocked = false;
 async function openCamera() {
-  // Bypasses the OS camera-picker intent entirely (some devices/OS versions
-  // ignore the file input's capture="environment" hint and default to the
-  // front lens) by requesting the rear camera directly via getUserMedia.
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  // Live rear camera via getUserMedia. If the browser refuses it (permission blocked,
+  // unsupported), use the phone's own camera picker instead. That picker can only open
+  // from a direct tap, so after a failure we show a big button to tap.
+  if (camBlocked || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     document.getElementById('fileInput').click();
     return;
   }
   cameraFacing = 'environment';
   const ok = await startStream(cameraFacing);
-  if (!ok) {
-    // getUserMedia unsupported/blocked — fall back to the native file picker
-    document.getElementById('fileInput').click();
+  if (!ok) { camBlocked = true; showPickerButton(); }
+}
+
+function showPickerButton() {
+  let el = document.getElementById('pickFallback');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'pickFallback';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    el.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#111);border-radius:18px;padding:18px;max-width:380px;width:100%;text-align:center">
+      <button type="button" id="pickFallbackGo" style="width:100%;height:72px;border:none;border-radius:16px;background:#7c4dff;color:#fff;font:700 1.5rem var(--display,sans-serif);letter-spacing:.05em;cursor:pointer"></button>
+      <button type="button" id="pickFallbackX" style="margin-top:12px;background:none;border:none;color:inherit;text-decoration:underline;font-size:1rem;cursor:pointer"></button></div>`;
+    document.body.appendChild(el);
+    el.querySelector('#pickFallbackGo').onclick = () => { el.remove(); document.getElementById('fileInput').click(); };
+    el.querySelector('#pickFallbackX').onclick = () => el.remove();
+    el.onclick = e => { if (e.target === el) el.remove(); };
   }
+  const sk = (typeof LANG === 'undefined' || LANG === 'sk');
+  el.querySelector('#pickFallbackGo').textContent = sk ? '📷 OTVORIŤ FOTOAPARÁT' : '📷 OPEN CAMERA';
+  el.querySelector('#pickFallbackX').textContent = sk ? 'Zrušiť' : 'Cancel';
 }
 
 async function startStream(facing) {
