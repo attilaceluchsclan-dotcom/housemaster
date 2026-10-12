@@ -70,7 +70,7 @@
 
   function noAccess(email) {
     const el = show(`<div class="msg bad">${esc(t('noAccess'))}<br>${esc(email || '')}</div><button id="hmOut">${t('other')}</button>`);
-    el.querySelector('#hmOut').onclick = async () => { try { await sb.auth.signOut(); } catch (e) {} location.reload(); };
+    el.querySelector('#hmOut').onclick = async () => { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} location.reload(); };
   }
 
   // Headers for calls to our own /api/* routes
@@ -79,7 +79,20 @@
     return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ((data.session && data.session.access_token) || '') };
   };
 
-  window.hmSignOut = async function () { try { await sb.auth.signOut(); } catch (e) {} location.reload(); };
+  window.hmSignOut = async function () { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} location.reload(); };
+
+  // Top bar on every page: who is logged in + log-out button
+  function whoBar(email) {
+    if (document.getElementById('whoAmI')) return;
+    const w = document.createElement('div'); w.id = 'whoAmI';
+    w.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font:500 .8rem/1.2 -apple-system,"Segoe UI",Roboto,sans-serif;padding:6px 8px;opacity:.85';
+    w.innerHTML = `<span>👤 ${esc(email || '')}<span id="whoHH">${window.hmWhoHH ? ' · ' + esc(window.hmWhoHH) : ''}</span></span>
+      <button type="button" id="hmLogout" style="border:1px solid currentColor;background:none;color:inherit;border-radius:999px;padding:4px 12px;font:600 .8rem inherit;cursor:pointer">${lang === 'en' ? 'Log out' : 'Odhlásiť'}</button>`;
+    document.body.prepend(w);
+    w.querySelector('#hmLogout').onclick = () => {
+      if (confirm(lang === 'en' ? 'Log out on this phone?' : 'Odhlásiť sa na tomto telefóne?')) window.hmSignOut();
+    };
+  }
 
   // No saved login: block the page right away.
   if (!hasSession) {
@@ -92,8 +105,9 @@
       const { data } = await sb.auth.getSession();
       if (!data.session) return emailStep();
       const { data: ok, error } = await sb.rpc('is_allowed');
-      if (error) { console.error(error); return; }          // don't lock out on a network hiccup
+      if (error) { console.error(error); if (/jwt|token|auth|401|403/i.test((error.message||'')+(error.code||''))) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} return emailStep(); } return; } // network hiccup: stay; auth error: re-login
       if (ok !== true) noAccess(data.session.user && data.session.user.email);
+      else whoBar(data.session.user && data.session.user.email);
     } catch (e) { console.error(e); }
   });
 })();
